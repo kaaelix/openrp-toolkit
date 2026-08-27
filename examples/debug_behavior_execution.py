@@ -51,9 +51,9 @@ def debug_active_chat():
     token = auth.get("token")
     user_id = auth.get("userId")
     
-    print("=" * 60)
-    print("OPENRP BEHAVIOR DEBUGGER & EXECUTION RUNBOOK")
-    print("=" * 60)
+    print("=" * 70)
+    print("🚀 OPENRP BEHAVIOR DEBUGGER & EXECUTION RUNBOOK")
+    print("=" * 70)
     
     # 1. Fetch User Profile
     me = api_request("/api/users/me", token=token)
@@ -61,81 +61,48 @@ def debug_active_chat():
     user_handle = me.get("data", {}).get("handle", "Unknown")
     print(f"[*] Authenticated User: {user_name} (@{user_handle})")
     
-    # 2. List Chats
-    chats_res = api_request("/api/chats", token=token)
-    raw_data = chats_res.get("data", [])
-    if isinstance(raw_data, dict):
-        chats = raw_data.get("data", [])
-    elif isinstance(raw_data, list):
-        chats = raw_data
-    else:
-        chats = []
-        
-    if not chats:
-        print("[!] No active chats found. Create a chatroom on openrp.ai first.")
-        return
-        
-    chat = chats[0]
-    chat_id = chat.get("id")
-    print(f"[*] Target Chatroom ID: {chat_id}")
+    # 2. Query Recent Behavior Executions via Official Debug API
+    print("\n" + "-" * 70)
+    print("🔍 RECENT BEHAVIOR EXECUTION TRACES (GET /api/v1/behavior-executions)")
+    print("-" * 70)
     
-    # 3. Inspect Chat Details & Participants
-    chat_detail = api_request(f"/api/chats/{chat_id}?expand=participants", token=token)
-    participants = chat_detail.get("data", {}).get("participants", {}).get("data", [])
+    exec_search = api_request("/api/v1/behavior-executions/search", method="POST", body={"limit": 3}, token=token)
+    executions = exec_search.get("data", {}).get("data", [])
     
-    user_part_id = None
-    bot_part_id = None
-    for p in participants:
-        if p.get("userId"):
-            user_part_id = p.get("id")
-        else:
-            bot_part_id = p.get("id")
+    if executions:
+        for idx, ex in enumerate(executions):
+            eid = ex.get("id")
+            status = ex.get("status")
+            started_at = ex.get("startedAt")
+            finished_at = ex.get("finishedAt")
+            beh_id = ex.get("behaviorId")
             
-    print(f"    - User Participant ID: {user_part_id}")
-    print(f"    - Bot Participant ID : {bot_part_id}")
-    
-    # 4. Fetch Recent Messages & Inspect Metadata Traces
-    print("\n" + "-" * 60)
-    print("INSPECTING RECENT MESSAGES & EXECUTION TRACES")
-    print("-" * 60)
-    
-    msg_res = api_request(f"/api/chats/{chat_id}/messages?limit=5", token=token)
-    msg_data = msg_res.get("data", {})
-    messages = msg_data.get("data", []) if isinstance(msg_data, dict) else msg_data
-    
-    for idx, msg in enumerate(messages):
-        msg_id = msg.get("id")
-        sender_type = "BOT" if msg.get("participantId") == bot_part_id else "USER"
-        content_preview = msg.get("content", "").replace("\n", " ")[:60]
-        created_at = msg.get("createdAt", "")
-        
-        print(f"\n[{idx + 1}] Message ID: {msg_id} ({sender_type})")
-        print(f"    Created At: {created_at}")
-        print(f"    Content   : \"{content_preview}...\"")
-        print(f"    Debug Mode Inspection URL:")
-        print(f"       https://openrp.ai/chats/{chat_id}?debugMessageId={msg_id}")
-        
-    # 5. Step-by-Step Manual Test Instructions
-    print("\n" + "=" * 60)
-    print("HOW TO TRIGGER DEBUG MODE MANUALLY IN BEHAVIOR EDITOR")
-    print("=" * 60)
-    print("1. Open the Behavior Editor in your browser: https://openrp.ai")
-    print("2. Click on the root 'events/chat_message' node on the canvas.")
-    print("3. In the right Inspector Panel, scroll to 'Manual Test'.")
-    print("4. Paste the following test payload:")
-    print("   {")
-    print(f'     "chatId": "{chat_id}",')
-    if messages:
-        print(f'     "messageId": "{messages[0].get("id")}"')
+            print(f"\n[{idx + 1}] Execution ID: {eid}")
+            print(f"    - Status     : {status}")
+            print(f"    - Started At : {started_at}")
+            print(f"    - Finished At: {finished_at}")
+            print(f"    - Behavior ID: {beh_id}")
+            
+            # Fetch node-level trace
+            nodes_res = api_request(f"/api/v1/behavior-executions/{eid}/node-executions", token=token)
+            nodes_trace = nodes_res.get("data", [])
+            print(f"    - Node Traces ({len(nodes_trace)} nodes executed):")
+            for nt in nodes_trace[:6]:
+                nid = nt.get("nodeId")
+                nstatus = nt.get("status")
+                duration = nt.get("duration")
+                print(f"      • [{nid}] -> {nstatus} ({duration}ms)")
     else:
-        print(f'     "messageId": "<paste_message_id_here>"')
-    print("   }")
-    print("5. Click 'Run Trigger Test'.")
-    print("6. The canvas will immediately enter DEBUG MODE:")
-    print("   - Green badge: Node executed successfully.")
-    print("   - Red badge  : Node failed (click to inspect error stack).")
-    print("   - Gray badge : Node was skipped by conditional logic.")
-    print("=" * 60 + "\n")
+        print("[!] No recent behavior executions found.")
+        
+    print("\n" + "=" * 70)
+    print("🛠️ MANUAL TEST / DEBUG INSTRUCTIONS")
+    print("=" * 70)
+    print("1. Open Behavior Editor in OpenRP: https://openrp.ai")
+    print("2. Click the root 'events/chat_message' node.")
+    print("3. In the Inspector pane under 'Manual Test', enter a test chatId & messageId.")
+    print("4. Click 'Run Trigger Test' to enter live visual Debug Mode.")
+    print("=" * 70 + "\n")
 
 if __name__ == "__main__":
     debug_active_chat()

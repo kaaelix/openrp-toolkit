@@ -517,7 +517,44 @@ TOOLS = [
         }
     },
 
-    # 8. RAW API
+    # 8. BEHAVIOR EXECUTIONS & DEBUG MODE TRACES
+    {
+        "name": "openrp_search_behavior_executions",
+        "description": "Search and list historical behavior execution traces across chat messages.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Maximum number of execution traces to return (default: 10)"},
+                "behaviorId": {"type": "string", "description": "Filter by Behavior ID"},
+                "chatId": {"type": "string", "description": "Filter by Chat ID"},
+                "status": {"type": "string", "description": "Filter by status, e.g. BEHAVIOR_EXECUTION_STATUS_COMPLETED"}
+            }
+        }
+    },
+    {
+        "name": "openrp_get_behavior_execution",
+        "description": "Retrieve execution summary, status, timestamps, and metadata for a specific behavior run.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "executionId": {"type": "string", "description": "Behavior Execution ID"}
+            },
+            "required": ["executionId"]
+        }
+    },
+    {
+        "name": "openrp_get_behavior_node_executions",
+        "description": "Retrieve step-by-step node execution traces (exact resolved inputs, outputs, status, error stack traces) for a behavior run.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "executionId": {"type": "string", "description": "Behavior Execution ID"}
+            },
+            "required": ["executionId"]
+        }
+    },
+
+    # 9. RAW API
     {
         "name": "openrp_raw_api",
         "description": "Execute any raw HTTP API call to OpenRP (GET/POST/PUT/DELETE /api/...).",
@@ -915,9 +952,33 @@ def handle_tool_call(name, args):
         
     # --- DISCOVERY ---
     elif name == "openrp_discover_worlds":
-        q = urllib.parse.quote(args.get("query", ""))
-        p = args.get("page", 1)
-        return make_request(f"/api/worlds/discover?query={q}&page={p}")
+        q = args.get("query", "")
+        page = args.get("page", 1)
+        return make_request(f"/api/worlds?query={urllib.parse.quote(q)}&page={page}")
+        
+    elif name == "openrp_search_behavior_executions":
+        payload = {}
+        if "limit" in args:
+            payload["limit"] = args["limit"]
+        if "behaviorId" in args:
+            payload["behaviorId"] = args["behaviorId"]
+        if "chatId" in args:
+            payload["chatId"] = args["chatId"]
+        if "status" in args:
+            payload["status"] = args["status"]
+        return make_request("/api/v1/behavior-executions/search", method="POST", body=payload)
+        
+    elif name == "openrp_get_behavior_execution":
+        eid = args.get("executionId")
+        if not eid:
+            return {"error": True, "message": "executionId is required"}
+        return make_request(f"/api/v1/behavior-executions/{eid}")
+        
+    elif name == "openrp_get_behavior_node_executions":
+        eid = args.get("executionId")
+        if not eid:
+            return {"error": True, "message": "executionId is required"}
+        return make_request(f"/api/v1/behavior-executions/{eid}/node-executions")
         
     # --- RAW ---
     elif name == "openrp_raw_api":

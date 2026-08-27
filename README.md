@@ -121,6 +121,19 @@ Credentials can also be set interactively via the `openrp_set_auth` tool.
 | `openrp_discover_worlds` | Searches public worlds by query keyword. |
 | `openrp_raw_api` | Executes arbitrary REST requests to any OpenRP API endpoint. |
 
+## MCP Server Tool Suite (31 Tools)
+
+The OpenRP MCP Server gives AI agents programmatic control over the OpenRP ecosystem:
+
+- **Authentication & Profile (3 tools)**: `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
+- **World Management (5 tools)**: `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_delete_world`
+- **Lorebook System (5 tools)**: `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
+- **Character Studio (3 tools)**: `openrp_list_characters`, `openrp_get_character`, `openrp_update_character`
+- **Behavior Engine (7 tools)**: `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
+- **Behavior Executions & Debug Tracing (3 tools)**: `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
+- **Chat & Direct Messaging (3 tools)**: `openrp_list_chats`, `openrp_get_chat_messages`, `openrp_send_message`
+- **Discovery & Gateway (2 tools)**: `openrp_discover_worlds`, `openrp_raw_api`
+
 ## Node Palette Overview (38 Nodes)
 
 OpenRP behavior graphs support 38 built-in node types:

@@ -28,16 +28,46 @@ Behaviors can be tested directly within the visual editor without needing to ope
 
 ---
 
-## 3. Live Chat Execution Tracing
+## 3. Programmatic Execution Tracing & MCP Debugging Tools
+
+AI agents and automated testing scripts can query and inspect behavior execution traces programmatically via MCP or REST:
+
+### A. List & Search Behavior Executions
+* **MCP Tool**: `openrp_search_behavior_executions`
+* **REST Route**: `POST /api/v1/behavior-executions/search`
+* **Body**:
+  ```json
+  {
+    "limit": 10,
+    "behaviorId": "01a042b9-c601-7107-bdf4-809118d53db2",
+    "status": "BEHAVIOR_EXECUTION_STATUS_COMPLETED"
+  }
+  ```
+
+### B. Retrieve Execution Summary
+* **MCP Tool**: `openrp_get_behavior_execution`
+* **REST Route**: `GET /api/v1/behavior-executions/{executionId}`
+* **Emits**: High-level execution status, started/finished timestamps, error codes, and graph snapshot.
+
+### C. Retrieve Step-by-Step Node Execution Traces
+* **MCP Tool**: `openrp_get_behavior_node_executions`
+* **REST Route**: `GET /api/v1/behavior-executions/{executionId}/node-executions`
+* **Emits**: Complete node-by-node runtime execution trace:
+  - Exact resolved node `inputs`
+  - Exact emitted node `outputs`
+  - Runtime execution `status` (`NODE_EXECUTION_STATUS_COMPLETED`, `NODE_EXECUTION_STATUS_FAILED`, `SKIPPED`)
+  - Execution duration in milliseconds.
+  - Complete error stack trace if a node failed.
+
+---
+
+## 4. Live Chat Execution Tracing in UI
 
 Every message generated in OpenRP contains an execution trace link:
 1. Hover or long-press on any character message bubble in the web interface.
 2. Click View Metadata.
 3. In the modal dialog, copy the Execution URL or click the link.
-4. The Behavior Editor will open the exact historical execution snapshot that generated that specific message, showing:
-   - What variables were stored at each step.
-   - Which branch of an If condition took effect.
-   - What the LLM received as input prompt and returned as raw tokens.
+4. The Behavior Editor will open the exact historical execution snapshot that generated that specific message.
 
 ---
 
