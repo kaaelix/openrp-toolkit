@@ -200,10 +200,10 @@ The OpenRP MCP Server equips agents with 31 programmatic developer tools:
 | `openrp_get_behavior` | `userId`, `worldId`, `behaviorId` | Retrieve behavior graph nodes, edges, and configuration. |
 | `openrp_deploy_behavior` | `userId`, `worldId`, `name`, `handle`, `graph`, `characterId`, `deleteOldBehaviors` | Create, sanitize (`xy-edge__`), and deploy a new behavior graph. |
 | `openrp_edit_behavior_node` | `userId`, `worldId`, `behaviorId`, `nodeId`, `nodeData` | Fast in-place update of a single node's `data` payload. |
-The OpenRP MCP Server exposes **37 high-level tools** organized into 9 operational domains:
+The OpenRP MCP Server exposes **38 high-level tools** organized into 9 operational domains:
 
 1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
-2. **World Management** (5 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_delete_world`
+2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
 3. **Lorebook System** (5 tools): `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
 4. **Character Studio** (5 tools): `openrp_list_characters`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
@@ -214,7 +214,7 @@ The OpenRP MCP Server exposes **37 high-level tools** organized into 9 operation
 
 ---
 
-## 2. Complete 37 MCP Tools Reference Guide
+## 2. Complete 38 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
@@ -228,8 +228,9 @@ The OpenRP MCP Server exposes **37 high-level tools** organized into 9 operation
 |---|---|---|
 | `openrp_list_my_worlds` | `page?`, `limit?` | Lists all worlds owned by the authenticated user |
 | `openrp_get_world` | `userId?`, `worldId?` | Fetches complete metadata, settings, and stats of a world |
-| `openrp_create_world` | `userId?`, `name`, `handle`, `description?`, `visibility?` | Creates a new World |
-| `openrp_update_world` | `userId?`, `worldId?`, `name?`, `description?`, `visibility?`, `tags?` | Updates world title, description, visibility, and tags |
+| `openrp_create_world` | `userId?`, `name`, `handle`, `description?`, `visibility?` | Creates a new World with verified `owner` and `chatOnly` payload |
+| `openrp_update_world` | `userId?`, `worldId?`, `name?`, `description?`, `readme?`, `visibility?`, `tags?` | Updates world title, description, tags, and visibility using `updateType: "metadata"` |
+| `openrp_update_world_readme` | `userId?`, `worldId?`, `readme` | Updates the main Markdown documentation (README.md) of a world up to 5000 words |
 | `openrp_delete_world` | `userId?`, `worldId?` | Permanently deletes a world and all associated entities |
 
 ### Category 3: Lorebook Management

@@ -228,22 +228,31 @@ TOOLS = [
     },
     {
         "name": "openrp_update_world",
-        "description": "Update all editable fields of a World: title, handle, description, markdown lorebook README, visibility, tags, avatarPath, bannerPath, and embeddingModelId. Note: 'private' visibility requires Pro/Plus plan.",
+        "description": "Update World metadata: name, description, readme (markdown documentation), tags, and visibility ('WORLD_VISIBILITY_PUBLIC' or 'WORLD_VISIBILITY_UNLISTED').",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
                 "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
                 "name": {"type": "string", "description": "World Title"},
-                "handle": {"type": "string", "description": "World Slug Handle"},
                 "description": {"type": "string", "description": "Short World Description"},
-                "readme": {"type": "string", "description": "Markdown world lorebook, rules, and documentation"},
-                "visibility": {"type": "string", "enum": ["public", "unlisted", "private"], "description": "Visibility ('public'/'unlisted' for Free, 'private' for Pro)"},
-                "tags": {"type": "array", "items": {"type": "string"}},
-                "avatarPath": {"type": "string", "description": "World Avatar icon image URL / storage path"},
-                "bannerPath": {"type": "string", "description": "World Header Banner image URL / storage path"},
-                "embeddingModelId": {"type": "string", "description": "AI model for vector lore indexing"}
+                "readme": {"type": "string", "description": "Markdown world lorebook, rules, and documentation (up to 5000 words)"},
+                "tags": {"type": "array", "items": {"type": "string"}, "description": "Category tags"},
+                "visibility": {"type": "string", "description": "Visibility: 'WORLD_VISIBILITY_PUBLIC' or 'WORLD_VISIBILITY_UNLISTED'"}
             }
+        }
+    },
+    {
+        "name": "openrp_update_world_readme",
+        "description": "Update the main README markdown documentation of a World (supports full GitHub markdown formatting up to 5000 words).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "readme": {"type": "string", "description": "Complete markdown documentation and lore"}
+            },
+            "required": ["readme"]
         }
     },
     {
@@ -781,14 +790,26 @@ def handle_tool_call(name, args):
         w = args.get("worldId") or auth_state.get("worldId")
         if not u or not w:
             return {"error": True, "message": "userId and worldId are required"}
-        curr = make_request(f"/api/users/{u}/worlds/{w}")
-        if curr.get("error") or not curr.get("data"):
-            return curr
-        world_obj = curr["data"]
-        for k in ["name", "handle", "description", "readme", "visibility", "tags", "avatarPath", "bannerPath", "embeddingModelId"]:
+        data = {}
+        for k in ["name", "description", "readme", "tags", "visibility"]:
             if k in args and args[k] is not None:
-                world_obj[k] = args[k]
-        return make_request(f"/api/users/{u}/worlds/{w}", method="PUT", body=world_obj)
+                data[k] = args[k]
+        payload = {
+            "updateType": "metadata",
+            "data": data
+        }
+        return make_request(f"/api/users/{u}/worlds/{w}", method="PUT", body=payload)
+        
+    elif name == "openrp_update_world_readme":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not u or not w or not args.get("readme"):
+            return {"error": True, "message": "userId, worldId, and readme are required"}
+        payload = {
+            "updateType": "metadata",
+            "data": {"readme": args["readme"]}
+        }
+        return make_request(f"/api/users/{u}/worlds/{w}", method="PUT", body=payload)
         
     elif name == "openrp_delete_world":
         u = args.get("userId") or auth_state.get("userId")
