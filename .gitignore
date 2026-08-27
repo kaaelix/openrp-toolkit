@@ -1,0 +1,27 @@
+# Secrets and Auth
+*.env
+*.env.*
+.openrp_mcp_auth.json
+*.auth.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# AI Assistant artifacts
+.system_generated/
+.tempmediaStorage/
+scratch/

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "openrp": {
+      "command": "python3",
+      "args": [
+        "/path/to/openrp-toolkit/mcp/openrp_mcp_server.py"
+      ],
+      "env": {
+        "OPENRP_TOKEN": "YOUR_OPENRP_JWT_ACCESS_TOKEN",
+        "OPENRP_USER_ID": "YOUR_USER_UUID",
+        "OPENRP_WORLD_ID": "YOUR_WORLD_UUID",
+        "OPENRP_CHARACTER_ID": "YOUR_CHARACTER_UUID"
+      }
+    }
+  }
+}
