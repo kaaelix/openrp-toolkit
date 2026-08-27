@@ -354,6 +354,25 @@ TOOLS = [
         }
     },
     {
+        "name": "openrp_create_character",
+        "description": "Create a new Character in a World with complete persona and settings.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "name": {"type": "string", "description": "Character Name"},
+                "handle": {"type": "string", "description": "Character Handle (slug)"},
+                "shortDescription": {"type": "string", "description": "Short description / title"},
+                "personality": {"type": "string", "description": "Core personality, system prompt, and behavioral constraints"},
+                "description": {"type": "string", "description": "Full backstory and lore"},
+                "status": {"type": "string", "description": "Character status or mood", "default": "Online"},
+                "dialogs": {"type": "array", "description": "Few-shot example conversations", "default": []}
+            },
+            "required": ["name", "handle"]
+        }
+    },
+    {
         "name": "openrp_update_character",
         "description": "Update Character details: name, personality (system prompt), description, shortDescription, greetings, status, avatarPath.",
         "inputSchema": {
@@ -363,18 +382,88 @@ TOOLS = [
                 "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
                 "characterId": {"type": "string", "description": "Character ID (optional if saved in auth)"},
                 "name": {"type": "string", "description": "Character Name"},
+                "handle": {"type": "string", "description": "Character Handle"},
                 "status": {"type": "string", "description": "Character status or mood"},
                 "shortDescription": {"type": "string", "description": "One-line character description"},
                 "description": {"type": "string", "description": "Full backstory and lore"},
                 "personality": {"type": "string", "description": "Core personality, system prompt, and behavioral constraints"},
                 "greetings": {"type": "array", "items": {"type": "string"}, "description": "Opening greeting messages"},
-                "dialogs": {"type": "array", "description": "Few-shot example conversations"},
+                "dialogs": {"type": "array", "description": "Few-shot example conversations", "default": []},
                 "avatarPath": {"type": "string", "description": "Avatar image URL / storage path"}
-            }
+            },
+            "required": ["characterId"]
+        }
+    },
+    {
+        "name": "openrp_delete_character",
+        "description": "Permanently delete a character from a world.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "characterId": {"type": "string", "description": "Character ID to delete"}
+            },
+            "required": ["characterId"]
         }
     },
 
-    # 5. BEHAVIOR GRAPHS & NODE EDITING
+    # 5. PROMPT TEMPLATES & SYSTEM PROMPTS
+    {
+        "name": "openrp_list_prompts",
+        "description": "List all prompt templates and system prompts in a world.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"}
+            }
+        }
+    },
+    {
+        "name": "openrp_get_prompt",
+        "description": "Get detailed Prompt Template structure, system nodes, user/assistant nodes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "promptId": {"type": "string", "description": "Prompt ID"}
+            },
+            "required": ["promptId"]
+        }
+    },
+    {
+        "name": "openrp_create_prompt",
+        "description": "Create a new Prompt Template in a World.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "name": {"type": "string", "description": "Prompt Name"},
+                "handle": {"type": "string", "description": "Prompt Handle (slug)"},
+                "content": {"type": "string", "description": "Prompt Body Template content"},
+                "isDefault": {"type": "boolean", "description": "Whether this is the default world prompt", "default": False}
+            },
+            "required": ["name", "handle"]
+        }
+    },
+    {
+        "name": "openrp_delete_prompt",
+        "description": "Delete a prompt template from a world.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "promptId": {"type": "string", "description": "Prompt ID to delete"}
+            },
+            "required": ["promptId"]
+        }
+    },
+
+    # 6. BEHAVIOR GRAPHS & NODE EDITING
     {
         "name": "openrp_list_behaviors",
         "description": "List all behavior graphs in a world.",
@@ -791,6 +880,22 @@ def handle_tool_call(name, args):
             return {"error": True, "message": "characterId is required"}
         return make_request(f"/api/v1/characters/{c}")
         
+    elif name == "openrp_create_character":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not u or not w or not args.get("name") or not args.get("handle"):
+            return {"error": True, "message": "userId, worldId, name, and handle are required"}
+        payload = {
+            "name": args["name"],
+            "handle": args["handle"],
+            "shortDescription": args.get("shortDescription", ""),
+            "personality": args.get("personality", ""),
+            "description": args.get("description", ""),
+            "status": args.get("status", "Online"),
+            "dialogs": args.get("dialogs", [])
+        }
+        return make_request(f"/api/users/{u}/worlds/{w}/characters", method="POST", body=payload)
+        
     elif name == "openrp_update_character":
         u = args.get("userId") or auth_state.get("userId")
         w = args.get("worldId") or auth_state.get("worldId")
@@ -804,7 +909,54 @@ def handle_tool_call(name, args):
         for k in ["name", "status", "shortDescription", "description", "personality", "greetings", "dialogs", "avatarPath"]:
             if k in args and args[k] is not None:
                 char_obj[k] = args[k]
+        if "dialogs" not in char_obj or char_obj["dialogs"] is None:
+            char_obj["dialogs"] = []
         return make_request(f"/api/users/{u}/worlds/{w}/characters/{c}", method="PUT", body=char_obj)
+        
+    elif name == "openrp_delete_character":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        c = args.get("characterId") or auth_state.get("characterId")
+        if not u or not w or not c:
+            return {"error": True, "message": "userId, worldId, and characterId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/characters/{c}", method="DELETE")
+        
+    # --- PROMPTS ---
+    elif name == "openrp_list_prompts":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not u or not w:
+            return {"error": True, "message": "userId and worldId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/prompts")
+        
+    elif name == "openrp_get_prompt":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        p = args.get("promptId")
+        if not u or not w or not p:
+            return {"error": True, "message": "userId, worldId, and promptId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/prompts/{p}")
+        
+    elif name == "openrp_create_prompt":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not u or not w or not args.get("name") or not args.get("handle"):
+            return {"error": True, "message": "userId, worldId, name, and handle are required"}
+        payload = {
+            "name": args["name"],
+            "handle": args["handle"],
+            "content": args.get("content", ""),
+            "isDefault": args.get("isDefault", False)
+        }
+        return make_request(f"/api/users/{u}/worlds/{w}/prompts", method="POST", body=payload)
+        
+    elif name == "openrp_delete_prompt":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        p = args.get("promptId")
+        if not u or not w or not p:
+            return {"error": True, "message": "userId, worldId, and promptId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/prompts/{p}", method="DELETE")
         
     # --- BEHAVIORS & NODES ---
     elif name == "openrp_list_behaviors":

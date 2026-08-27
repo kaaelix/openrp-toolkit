@@ -200,26 +200,91 @@ The OpenRP MCP Server equips agents with 31 programmatic developer tools:
 | `openrp_get_behavior` | `userId`, `worldId`, `behaviorId` | Retrieve behavior graph nodes, edges, and configuration. |
 | `openrp_deploy_behavior` | `userId`, `worldId`, `name`, `handle`, `graph`, `characterId`, `deleteOldBehaviors` | Create, sanitize (`xy-edge__`), and deploy a new behavior graph. |
 | `openrp_edit_behavior_node` | `userId`, `worldId`, `behaviorId`, `nodeId`, `nodeData` | Fast in-place update of a single node's `data` payload. |
-| `openrp_update_behavior` | `userId`, `worldId`, `behaviorId`, `name`, `graph` | Replace full behavior graph topology and node positions. |
-| `openrp_attach_behavior_to_character` | `characterId`, `behaviorId` | Bind a behavior graph to an active character bot. |
-| `openrp_delete_behavior` | `userId`, `worldId`, `behaviorId` | Delete a behavior graph. |
+The OpenRP MCP Server exposes **37 high-level tools** organized into 9 operational domains:
 
-### 6. Behavior Executions & Debug Traces (3 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_search_behavior_executions` | `limit`, `behaviorId`, `chatId`, `status` | Search and list runtime execution records across chats. |
-| `openrp_get_behavior_execution` | `executionId` | Retrieve execution summary, status (`COMPLETED`/`FAILED`), and timestamps. |
-| `openrp_get_behavior_node_executions` | `executionId` | Retrieve step-by-step node execution traces (resolved inputs, outputs, errors, durations). |
+1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
+2. **World Management** (5 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_delete_world`
+3. **Lorebook System** (5 tools): `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
+4. **Character Studio** (5 tools): `openrp_list_characters`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
+5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
+6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
+7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
+8. **Chat & Live Messaging** (3 tools): `openrp_list_chats`, `openrp_get_chat_messages`, `openrp_send_message`
+9. **Discovery & Universal Gateway** (2 tools): `openrp_discover_worlds`, `openrp_raw_api`
 
-### 7. Chat & Messaging (3 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_list_chats` | `page`, `limit` | List active chatroom sessions and participants. |
-| `openrp_get_chat_messages` | `chatId`, `page`, `limit` | Retrieve conversation history for a chatroom. |
-| `openrp_send_message` | `chatId`, `content`, `chatParticipantId` | Post a message directly into a chatroom. |
+---
 
-### 8. Discovery & Universal Gateway (2 Tools)
-| Tool Name | Parameters | Description |
+## 2. Complete 37 MCP Tools Reference Guide
+
+### Category 1: Authentication & Profile
+| Tool Name | Parameters | Purpose |
 |---|---|---|
-| `openrp_discover_worlds` | `query`, `page` | Search public community worlds. |
-| `openrp_raw_api` | `path`, `method`, `body` | Execute raw REST requests to any OpenRP API endpoint. |
+| `openrp_set_auth` | `token?`, `refreshToken?`, `userId?`, `worldId?`, `characterId?` | Stores auth credentials, sets active IDs, and starts background auto-refresh daemon |
+| `openrp_refresh_token` | *(none)* | Forces manual Supabase JWT session refresh before token expiry |
+| `openrp_get_me` | *(none)* | Fetches authenticated user account profile, settings, credits, and subscription status |
+
+### Category 2: World Management
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_my_worlds` | `page?`, `limit?` | Lists all worlds owned by the authenticated user |
+| `openrp_get_world` | `userId?`, `worldId?` | Fetches complete metadata, settings, and stats of a world |
+| `openrp_create_world` | `userId?`, `name`, `handle`, `description?`, `visibility?` | Creates a new World |
+| `openrp_update_world` | `userId?`, `worldId?`, `name?`, `description?`, `visibility?`, `tags?` | Updates world title, description, visibility, and tags |
+| `openrp_delete_world` | `userId?`, `worldId?` | Permanently deletes a world and all associated entities |
+
+### Category 3: Lorebook Management
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_lores` | `userId?`, `worldId?`, `page?`, `limit?` | Lists all lorebook entries and memory records in a world |
+| `openrp_get_lore` | `userId?`, `worldId?`, `loreId` | Retrieves specific lore title, handle, markdown content, and exclusive flags |
+| `openrp_create_lore` | `userId?`, `worldId?`, `title`, `handle`, `content`, `isExclusive?`, `tags?` | Creates a new factual lorebook entry |
+| `openrp_update_lore` | `userId?`, `worldId?`, `loreId`, `title?`, `content?`, `isExclusive?`, `tags?` | Updates an existing lorebook record |
+| `openrp_delete_lore` | `userId?`, `worldId?`, `loreId` | Permanently deletes a lorebook entry |
+
+### Category 4: Character Studio & Personas
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_characters` | `userId?`, `worldId?` | Lists all character bots residing inside a world |
+| `openrp_get_character` | `characterId?` | Retrieves full persona details, system prompt, greetings, dialogs, and avatar URL |
+| `openrp_create_character` | `userId?`, `worldId?`, `name`, `handle`, `shortDescription?`, `personality?`, `description?`, `status?`, `dialogs?` | Creates a new character bot in a world |
+| `openrp_update_character` | `userId?`, `worldId?`, `characterId?`, `name?`, `status?`, `shortDescription?`, `description?`, `personality?`, `greetings?`, `dialogs?`, `avatarPath?` | Updates character persona, dialog examples, and system prompt |
+| `openrp_delete_character` | `userId?`, `worldId?`, `characterId` | Permanently deletes a character from a world |
+
+### Category 5: Prompt Template System
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_prompts` | `userId?`, `worldId?` | Lists all system prompt templates configured in a world |
+| `openrp_get_prompt` | `userId?`, `worldId?`, `promptId` | Retrieves detailed prompt template nodes (system, user, assistant) |
+| `openrp_create_prompt` | `userId?`, `worldId?`, `name`, `handle`, `content?`, `isDefault?` | Creates a new world prompt template |
+| `openrp_delete_prompt` | `userId?`, `worldId?`, `promptId` | Deletes a prompt template from a world |
+
+### Category 6: Behavior Pipeline Engine
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_behaviors` | `userId?`, `worldId?` | Lists all behavior graphs in a world |
+| `openrp_get_behavior` | `userId?`, `worldId?`, `behaviorId` | Retrieves full Behavior Graph JSON (nodes, edges, expressions) |
+| `openrp_update_behavior` | `userId?`, `worldId?`, `behaviorId`, `name?`, `handle?`, `graph` | In-place update of an existing Behavior Graph without losing character bindings |
+| `openrp_edit_behavior_node` | `userId?`, `worldId?`, `behaviorId`, `nodeId`, `nodeData` | Granular in-place edit of a single node's data/expressions |
+| `openrp_deploy_behavior` | `userId?`, `worldId?`, `characterId?`, `name`, `handle`, `graph`, `deleteOldBehaviors?` | Atomic deployment and auto-binding of a behavior graph to a character |
+| `openrp_delete_behavior` | `userId?`, `worldId?`, `behaviorId` | Deletes a behavior pipeline from a world |
+| `openrp_attach_behavior_to_character` | `characterId?`, `behaviorId` | Binds a behavior pipeline to an active character |
+
+### Category 7: Behavior Executions & Debugging Traces
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_search_behavior_executions` | `limit?`, `behaviorId?`, `chatId?`, `status?` | Searches execution history runs (`COMPLETED`, `FAILED`, etc.) |
+| `openrp_get_behavior_execution` | `executionId` | Retrieves execution summary, timestamps, trigger message, and status |
+| `openrp_get_behavior_node_executions` | `executionId` | Retrieves step-by-step resolved node execution traces, inputs, outputs, and errors |
+
+### Category 8: Chat & Live Messaging
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_list_chats` | `page?`, `limit?` | Lists active chat sessions and room participants |
+| `openrp_get_chat_messages` | `chatId`, `limit?` | Fetches conversation history from a chatroom |
+| `openrp_send_message` | `chatId`, `content`, `chatParticipantId?` | Dispatches a message directly into a chatroom to trigger behaviors |
+
+### Category 9: Discovery & Universal REST Gateway
+| Tool Name | Parameters | Purpose |
+|---|---|---|
+| `openrp_discover_worlds` | `query?`, `page?` | Searches public community worlds (`/api/worlds/discover`) |
+| `openrp_raw_api` | `path`, `method?`, `body?` | Executes arbitrary OpenRP REST API calls with auto-authentication |
