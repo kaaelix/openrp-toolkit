@@ -952,9 +952,9 @@ def handle_tool_call(name, args):
         
     # --- DISCOVERY ---
     elif name == "openrp_discover_worlds":
-        q = args.get("query", "")
+        q = urllib.parse.quote(args.get("query", ""))
         page = args.get("page", 1)
-        return make_request(f"/api/worlds?query={urllib.parse.quote(q)}&page={page}")
+        return make_request(f"/api/worlds/discover?query={q}&page={page}")
         
     elif name == "openrp_search_behavior_executions":
         payload = {}
