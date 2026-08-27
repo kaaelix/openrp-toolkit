@@ -1,5 +1,18 @@
 # Testing & Diagnostics Runbook
 
+## 0. Behavior Testing Prerequisites & World Scoping
+
+Before testing any Behavior Graph or initiating live chat messages:
+
+1. **Strict World & Character Co-Location**:
+   * The testing character (`characterId`) **MUST reside in the exact same World (`worldId`)** where the behavior graph is defined.
+   * Testing with a character from a different world will fail to resolve world lore vector embeddings, custom variables, and permission contexts.
+2. **Mandatory Behavior Binding Prerequisite**:
+   * The behavior graph **MUST already be attached/set to the character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`).
+   * If the behavior is not attached, OpenRP will route incoming messages through the standard fallback LLM chat without triggering the behavior pipeline graph.
+
+---
+
 ## 1. Editor Execution Modes
 
 1. Build Mode: Default graph composition canvas for adding nodes, defining expressions, and wiring edges.

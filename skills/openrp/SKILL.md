@@ -148,6 +148,10 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 - **Viewport Virtualization & 1x1 Pixel Collapse Prevention**:
   ReactFlow virtualizes off-screen nodes and may collapse distant nodes ($X > 3000\text{px}$) into `1x1` pixel bounding boxes (`measured: { width: 1, height: 1 }`). Always keep node clusters centered within compact coordinates ($X: 100-2400\text{px}, Y: 100-1400\text{px}$) so every node renders at full dimensions with visible wire connections.
 
+### Rule 9: Strict World-Character Co-Location & Behavior Binding Prerequisite for Testing
+- **World & Character Co-Location**: When testing or executing behavior pipelines in a World (`worldId`), the character (`characterId`) used for testing **MUST belong to that exact same World**. Using a character from a different World breaks RAG vector lore lookup, context retrieval, and causes permission errors.
+- **Behavior Binding Prerequisite**: Before initiating a chat session or sending test messages (`openrp_send_message`) to trigger the behavior pipeline (`events/chat_message`), the behavior graph **MUST already be explicitly attached/set to that character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`). If the behavior is not attached, OpenRP defaults to generic fallback chat and the behavior pipeline will not execute.
+
 ## Tool Usage Guide: `openrp_edit_behavior_node` vs `openrp_update_behavior`
 
 | Task | Recommended MCP Tool | Why |
