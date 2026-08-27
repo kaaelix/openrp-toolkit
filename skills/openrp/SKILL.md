@@ -200,7 +200,7 @@ The OpenRP MCP Server equips agents with 31 programmatic developer tools:
 | `openrp_get_behavior` | `userId`, `worldId`, `behaviorId` | Retrieve behavior graph nodes, edges, and configuration. |
 | `openrp_deploy_behavior` | `userId`, `worldId`, `name`, `handle`, `graph`, `characterId`, `deleteOldBehaviors` | Create, sanitize (`xy-edge__`), and deploy a new behavior graph. |
 | `openrp_edit_behavior_node` | `userId`, `worldId`, `behaviorId`, `nodeId`, `nodeData` | Fast in-place update of a single node's `data` payload. |
-The OpenRP MCP Server exposes **38 high-level tools** organized into 9 operational domains:
+The OpenRP MCP Server exposes **40 high-level tools** organized into 9 operational domains:
 
 1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
@@ -209,12 +209,12 @@ The OpenRP MCP Server exposes **38 high-level tools** organized into 9 operation
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
 6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
 7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
-8. **Chat & Live Messaging** (3 tools): `openrp_list_chats`, `openrp_get_chat_messages`, `openrp_send_message`
-9. **Discovery & Universal Gateway** (2 tools): `openrp_discover_worlds`, `openrp_raw_api`
+8. **Chat & Live Messaging** (4 tools): `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
+9. **Discovery, AI Models & Universal Gateway** (3 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`
 
 ---
 
-## 2. Complete 38 MCP Tools Reference Guide
+## 2. Complete 40 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
@@ -287,11 +287,13 @@ The OpenRP MCP Server exposes **38 high-level tools** organized into 9 operation
 | Tool Name | Parameters | Purpose |
 |---|---|---|
 | `openrp_list_chats` | `page?`, `limit?` | Lists active chat sessions and room participants |
+| `openrp_get_chat` | `chatId` | Retrieves detailed metadata, participants, model settings, and connected world for a chatroom |
 | `openrp_get_chat_messages` | `chatId`, `limit?` | Fetches conversation history from a chatroom |
 | `openrp_send_message` | `chatId`, `content`, `chatParticipantId?` | Dispatches a message directly into a chatroom to trigger behaviors |
 
-### Category 9: Discovery & Universal REST Gateway
+### Category 9: Discovery, AI Models & Universal REST Gateway
 | Tool Name | Parameters | Purpose |
 |---|---|---|
+| `openrp_list_models` | *(none)* | Lists all 38+ available AI models (Claude Opus/Sonnet 4.8, GPT-5.4, Gemini 3.5, Grok 4.5, Kimi k3, DeepSeek) |
 | `openrp_discover_worlds` | `query?`, `page?` | Searches public community worlds (`/api/worlds/discover`) |
 | `openrp_raw_api` | `path`, `method?`, `body?` | Executes arbitrary OpenRP REST API calls with auto-authentication |

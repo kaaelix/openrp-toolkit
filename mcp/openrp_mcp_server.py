@@ -578,6 +578,17 @@ TOOLS = [
         "inputSchema": {"type": "object", "properties": {}}
     },
     {
+        "name": "openrp_get_chat",
+        "description": "Get detailed metadata for a specific chat room including all human and AI participants, active model, and world binding.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "chatId": {"type": "string", "description": "Chat Room ID"}
+            },
+            "required": ["chatId"]
+        }
+    },
+    {
         "name": "openrp_get_chat_messages",
         "description": "Get message history for a specific chat room.",
         "inputSchema": {
@@ -602,7 +613,12 @@ TOOLS = [
         }
     },
 
-    # 7. DISCOVERY & COMMUNITY
+    # 7. AI MODELS & DISCOVERY
+    {
+        "name": "openrp_list_models",
+        "description": "List all 38+ available foundational AI models on OpenRP (Claude Sonnet/Opus 4.8, GPT-5.4, Gemini 3.5, Grok 4.5, Kimi k3, GLM 5.2, DeepSeek) with their provider details and IDs for configuring AI behavior nodes.",
+        "inputSchema": {"type": "object", "properties": {}}
+    },
     {
         "name": "openrp_discover_worlds",
         "description": "Search and explore public worlds on OpenRP by query and page.",
@@ -1108,6 +1124,12 @@ def handle_tool_call(name, args):
     elif name == "openrp_list_chats":
         return make_request("/api/chats")
         
+    elif name == "openrp_get_chat":
+        chat_id = args.get("chatId")
+        if not chat_id:
+            return {"error": True, "message": "chatId is required"}
+        return make_request(f"/api/chats/{chat_id}")
+        
     elif name == "openrp_get_chat_messages":
         chat_id = args["chatId"]
         return make_request(f"/api/chats/{chat_id}/messages")
@@ -1121,7 +1143,10 @@ def handle_tool_call(name, args):
         }
         return make_request(f"/api/chats/{chat_id}/messages", method="POST", body=payload)
         
-    # --- DISCOVERY ---
+    # --- AI MODELS & DISCOVERY ---
+    elif name == "openrp_list_models":
+        return make_request("/api/models")
+        
     elif name == "openrp_discover_worlds":
         q = urllib.parse.quote(args.get("query", ""))
         page = args.get("page", 1)
