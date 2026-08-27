@@ -766,15 +766,13 @@ def handle_tool_call(name, args):
         if not u:
             return {"error": True, "message": "userId is required"}
         payload = {
+            "owner": u,
             "name": args["name"],
             "handle": args["handle"],
             "description": args.get("description", ""),
-            "readme": args.get("readme", ""),
-            "visibility": args.get("visibility", "public"),
             "tags": args.get("tags", []),
-            "avatarPath": args.get("avatarPath", None),
-            "bannerPath": args.get("bannerPath", None),
-            "embeddingModelId": args.get("embeddingModelId", "text-embedding-3-small")
+            "visibility": args.get("visibility", "WORLD_VISIBILITY_PUBLIC"),
+            "chatOnly": args.get("chatOnly", False)
         }
         return make_request(f"/api/users/{u}/worlds", method="POST", body=payload)
         
