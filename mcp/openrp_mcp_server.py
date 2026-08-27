@@ -217,7 +217,7 @@ TOOLS = [
                 "handle": {"type": "string", "description": "Unique URL slug handle"},
                 "description": {"type": "string", "description": "Short pitch description"},
                 "readme": {"type": "string", "description": "Markdown world lorebook, geography, rules, and documentation"},
-                "visibility": {"type": "string", "enum": ["public", "unlisted", "private"], "description": "Visibility: 'public' or 'unlisted' for Free users; 'private' for Pro users", "default": "public"},
+                "visibility": {"type": "string", "description": "World Visibility: 'WORLD_VISIBILITY_PUBLIC' (default), 'WORLD_VISIBILITY_UNLISTED' (same as public for now), or 'WORLD_VISIBILITY_PRIVATE' (requires OpenRP Plus plan)", "default": "WORLD_VISIBILITY_PUBLIC"},
                 "tags": {"type": "array", "items": {"type": "string"}, "description": "Category tags"},
                 "avatarPath": {"type": "string", "description": "World Avatar icon image URL / storage path"},
                 "bannerPath": {"type": "string", "description": "World Header Banner image URL / storage path"},
@@ -228,7 +228,7 @@ TOOLS = [
     },
     {
         "name": "openrp_update_world",
-        "description": "Update World metadata: name, description, readme (markdown documentation), tags, and visibility ('WORLD_VISIBILITY_PUBLIC' or 'WORLD_VISIBILITY_UNLISTED').",
+        "description": "Update World metadata: name, description, readme (markdown documentation), tags, and visibility ('WORLD_VISIBILITY_PUBLIC', 'WORLD_VISIBILITY_UNLISTED', or 'WORLD_VISIBILITY_PRIVATE' for Plus users).",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -238,7 +238,7 @@ TOOLS = [
                 "description": {"type": "string", "description": "Short World Description"},
                 "readme": {"type": "string", "description": "Markdown world lorebook, rules, and documentation (up to 5000 words)"},
                 "tags": {"type": "array", "items": {"type": "string"}, "description": "Category tags"},
-                "visibility": {"type": "string", "description": "Visibility: 'WORLD_VISIBILITY_PUBLIC' or 'WORLD_VISIBILITY_UNLISTED'"}
+                "visibility": {"type": "string", "description": "World Visibility: 'WORLD_VISIBILITY_PUBLIC', 'WORLD_VISIBILITY_UNLISTED' (same as public for now), or 'WORLD_VISIBILITY_PRIVATE' (requires OpenRP Plus)"}
             }
         }
     },

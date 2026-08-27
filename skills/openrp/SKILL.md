@@ -233,6 +233,12 @@ The OpenRP MCP Server exposes **38 high-level tools** organized into 9 operation
 | `openrp_update_world_readme` | `userId?`, `worldId?`, `readme` | Updates the main Markdown documentation (README.md) of a world up to 5000 words |
 | `openrp_delete_world` | `userId?`, `worldId?` | Permanently deletes a world and all associated entities |
 
+> [!NOTE]
+> **Official Developer Notice on World Visibility**:
+> - **`WORLD_VISIBILITY_PUBLIC`**: Default public visibility accessible across community feeds and search.
+> - **`WORLD_VISIBILITY_UNLISTED`**: The same as public, for now.
+> - **`WORLD_VISIBILITY_PRIVATE`**: **Requires OpenRP Plus/Pro subscription** (`isPlus: true`). Free accounts attempting to set private visibility will receive a plan constraint error from the backend.
+
 ### Category 3: Lorebook Management
 | Tool Name | Parameters | Purpose |
 |---|---|---|

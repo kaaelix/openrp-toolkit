@@ -32,6 +32,11 @@ World updates use a polymorphic `updateType: "metadata"` envelope:
 }
 ```
 
+### World Visibility Specifications (Official Developer Rules)
+- `WORLD_VISIBILITY_PUBLIC`: Public visibility. Visible in global explore feeds, community discover queries, and public profile listings.
+- `WORLD_VISIBILITY_UNLISTED`: Unlisted visibility. Currently functions the same as public, for now.
+- `WORLD_VISIBILITY_PRIVATE`: Private visibility. **Requires OpenRP Plus/Pro plan** (`isPlus: true`). Free tier accounts attempting to set private visibility will be rejected by the backend.
+
 ### World README.md Editing (`openrp_update_world_readme`)
 The main World documentation (README) supports full GitHub Flavored Markdown up to 5,000 words:
 ```json
