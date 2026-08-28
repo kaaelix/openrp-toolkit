@@ -5,9 +5,9 @@
 [![npm version](https://img.shields.io/badge/npm-v1.0.0-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![Author](https://img.shields.io/badge/Author-Kaa-FF4081?style=for-the-badge)](https://github.com/kaaelix)
+[![Author](https://img.shields.io/badge/Author-kaaelix-FF4081?style=for-the-badge)](https://github.com/kaaelix)
 
-> **Author & Maintainer**: **Kaa** ([@kaaelix](https://github.com/kaaelix) | OpenRP: [@Seraaa](https://openrp.ai/Seraaa))  
+> **Author & Maintainer**: **kaaelix** ([@kaaelix](https://github.com/kaaelix) | OpenRP: [@Seraaa](https://openrp.ai/Seraaa))  
 > *An independent, community-built AI Agent Skill and Model Context Protocol (MCP) suite for [OpenRP.ai](https://openrp.ai).*
 
 ---
@@ -29,7 +29,7 @@
 ## Key Capabilities
 
 * **47 Comprehensive MCP Tools**: Full operational coverage across 9 distinct domains (Authentication, Worlds, Lorebook & Exclusive Access, Characters, Character Groups & Factions, Prompts, Behavior Graphs, Executions, Chats, and Foundation AI Models).
-* **Pure Node.js Engine (Zero External Dependencies)**: Built entirely using Node.js 18+ native `fetch` and standard library modules. No compilation or third-party dependencies required.
+* **Pure Node.js Engine (Zero External Dependencies)**: Built entirely using Node.js 18+ native `fetch` and standard library modules. No compilation, external SDKs, or Python runtimes required.
 * **Autonomous Background Token Refresh Daemon**: Automatically refreshes Supabase JWT authentication every 45 minutes to maintain active sessions.
 * **Full 38-Node Behavior Engine Palette**: Support for all OpenRP node types (Events, AI Models, Control Flow, Storage, Utilities, Streaming, Try-Catch).
 * **Deterministic ReactFlow Sanitization**: Automatically normalizes edge IDs (`xy-edge__<source><sourceHandle>-<target><targetHandle>`) and coordinates to prevent graph layout collapse.
@@ -38,38 +38,75 @@
 
 ---
 
-## Quickstart via NPX (Recommended)
+## Installation & Getting Started
 
-You can run, install, and diagnose the toolkit directly using `npx` without cloning the repository:
+You can install, configure, and use the OpenRP Toolkit via `npx` (zero install) or as a global npm package:
 
-### 1. Interactive Installation
-Run the installer to configure your environment automatically:
+### Method 1: Interactive 1-Command Setup via NPX (Recommended)
+
+Run the interactive installer:
 ```bash
 npx openrp-toolkit install
 ```
-The installer provides:
-* **Auto-Detect Environments**: Automatically scans your system for installed AI assistants (Google Antigravity, Claude Code, Claude Desktop, Cursor, Windsurf) and configures them instantly.
-* **Custom Platform Selection**: Lets you choose specific target platforms manually.
+*(Alternative aliases: `npx openrp-toolkit add`)*
 
-### 2. Authentication Setup
-Set up your OpenRP session credentials interactively:
+The installer scans your local system and automatically detects:
+* Google Antigravity & Gemini CLI (`~/.agents/skills/openrp` and `mcp_config.json`)
+* Claude Code CLI (`~/.claude/skills/openrp` and `claude mcp add`)
+* Claude Desktop (`claude_desktop_config.json`)
+* Cursor IDE (`.cursor/skills/openrp` and `.cursor/mcp.json`)
+* Windsurf / Codeium Cascade (`~/.codeium/windsurf`)
+* OpenAI Codex (`~/.codex/skills/openrp`)
+
+---
+
+### Method 2: Global Installation via NPM
+
+Install globally to access the `openrp-toolkit` or `openrp` command from anywhere:
 ```bash
-npx openrp-toolkit auth
+npm install -g openrp-toolkit
 ```
 
-### 3. Environment & Connectivity Diagnostics
-Verify your installation, Node runtime, and OpenRP API connectivity:
+After installation, run any of the available commands:
 ```bash
-npx openrp-toolkit doctor
+openrp install    # Run interactive assistant installer
+openrp doctor     # Run diagnostic checks
+openrp auth       # Set up OpenRP authentication credentials
+openrp list       # Browse catalog of all 47 MCP tools & skills
+openrp serve      # Launch stdio MCP server process
 ```
 
 ---
 
-## Direct MCP Client Configuration
+### Method 3: Direct Integration into AI Assistants & MCP Clients
 
-To configure OpenRP directly inside your MCP client settings (`mcp.json` / `claude_desktop_config.json`):
+You can manually register OpenRP MCP Server into your assistant configurations:
 
-### Option A: Using NPX (Global / Standalone)
+#### 1. Claude Code CLI
+```bash
+claude mcp add openrp npx -y openrp-toolkit serve
+```
+
+#### 2. Google Antigravity & Gemini CLI (`agy`)
+* **Step A (Skill Definition)**:
+  ```bash
+  mkdir -p ~/.agents/skills/openrp
+  npx openrp-toolkit install # Select option [3] or [1]
+  ```
+* **Step B (MCP Server in `~/.gemini/antigravity-cli/mcp_config.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "openrp": {
+        "command": "npx",
+        "args": ["-y", "openrp-toolkit", "serve"]
+      }
+    }
+  }
+  ```
+
+#### 3. Cursor IDE
+Create or update `.cursor/mcp.json` in your workspace root:
 ```json
 {
   "mcpServers": {
@@ -81,64 +118,20 @@ To configure OpenRP directly inside your MCP client settings (`mcp.json` / `clau
 }
 ```
 
-### Option B: Using Local Node Server
+#### 4. Windsurf (Codeium Cascade)
+Add to `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
     "openrp": {
-      "command": "node",
-      "args": ["/path/to/openrp-toolkit/mcp/server.js"]
+      "command": "npx",
+      "args": ["-y", "openrp-toolkit", "serve"]
     }
   }
 }
 ```
 
----
-
-## Manual Installation Guide by Platform
-
-If you prefer manual setup over the `npx openrp-toolkit install` command:
-
-### 1. Google Antigravity & Gemini CLI (`agy`)
-```bash
-# 1. Create skill directory
-mkdir -p ~/.agents/skills/openrp
-
-# 2. Copy skill files
-cp -r skills/openrp/* ~/.agents/skills/openrp/
-
-# 3. Add to ~/.gemini/antigravity-cli/mcp_config.json
-```
-```json
-{
-  "mcpServers": {
-    "openrp": {
-      "command": "node",
-      "args": ["/path/to/openrp-toolkit/mcp/server.js"]
-    }
-  }
-}
-```
-
-### 2. Claude Code CLI
-```bash
-claude mcp add openrp node "/path/to/openrp-toolkit/mcp/server.js"
-```
-
-### 3. Cursor IDE
-Add to your project's `.cursor/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "openrp": {
-      "command": "node",
-      "args": ["/path/to/openrp-toolkit/mcp/server.js"]
-    }
-  }
-}
-```
-
-### 4. Claude Desktop App
+#### 5. Claude Desktop App
 Add to `claude_desktop_config.json`:
 * **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 * **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -148,8 +141,8 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "openrp": {
-      "command": "node",
-      "args": ["/path/to/openrp-toolkit/mcp/server.js"]
+      "command": "npx",
+      "args": ["-y", "openrp-toolkit", "serve"]
     }
   }
 }
@@ -157,23 +150,51 @@ Add to `claude_desktop_config.json`:
 
 ---
 
-## Authentication Guide
+## Authentication Setup
 
-OpenRP utilizes Supabase authentication. You can authenticate using either method:
+OpenRP utilizes Supabase authentication. You can configure your credentials interactively:
 
-### Method 1: Browser Cookie Authentication (Recommended)
-1. Log in to **[OpenRP.ai](https://openrp.ai)** in your browser.
+```bash
+npx openrp-toolkit auth
+```
+
+### How to get your OpenRP credentials:
+1. Open your browser and navigate to **[OpenRP.ai](https://openrp.ai)**.
 2. Open Developer Tools (`F12` -> `Application` -> `Cookies` -> `https://openrp.ai`).
 3. Find cookie `sb-uixnaquqjhzcctyfoapf-auth-token` and copy its `access_token` and `refresh_token`.
-4. Run `npx openrp-toolkit auth` to store credentials in `~/.openrp_mcp_auth.json`.
+4. Paste the values into `npx openrp-toolkit auth`.
 
-*The MCP Server automatically extracts the access token and schedules background refresh intervals.*
+*The MCP Server stores credentials in `~/.openrp_mcp_auth.json` and autonomously schedules token refresh intervals every 45 minutes.*
 
-### Method 2: Bearer JWT Access Token
-1. Open Developer Tools (`F12` -> `Network` tab).
-2. Filter by `Fetch/XHR` and inspect any `/api/...` request.
-3. Copy the token from header `Authorization: Bearer <TOKEN>`.
-4. Run `npx openrp-toolkit auth` and paste the token string.
+---
+
+## Environment & Connectivity Diagnostics
+
+To verify your Node.js environment, credentials, package integrity, and OpenRP API connectivity:
+```bash
+npx openrp-toolkit doctor
+```
+
+Output example:
+```
+┌  OpenRP Toolkit & MCP Suite (v1.0.0)
+│  Maintainer: kaaelix (https://github.com/kaaelix)
+│  Platform: https://openrp.ai
+└───────────────────────────────────────────────────────────────
+
+Running OpenRP Toolkit Diagnostics...
+
+[CHECK 1/4] Node.js Runtime: v22.x (Native fetch support) -> OK
+[CHECK 2/4] Package Integrity & Skill Files -> OK (47 MCP tools ready)
+[CHECK 3/4] Authentication State -> OK (User ID: configured)
+[CHECK 4/4] Testing connection to https://openrp.ai...
+            OpenRP API Endpoint: HTTP 401 -> OK
+
+┌───────────────────────────────────────────────────────────────┐
+│ [SUCCESS] All diagnostic checks passed with 0 errors.         │
+│ Your OpenRP Toolkit environment is ready to use!              │
+└───────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -208,7 +229,7 @@ openrp-toolkit/
 ├── package.json                       # NPM package configuration (v1.0.0)
 ├── bin/
 │   └── cli.js                         # Node.js CLI executable (stdio MCP runner & installer)
-├── README.md                          # Master documentation & installation guide (by Kaa)
+├── README.md                          # Master documentation & installation guide
 ├── LICENSE                            # MIT Open Source License
 ├── mcp/
 │   ├── server.js                      # Pure Node.js 47-Tool MCP JSON-RPC Server
@@ -228,7 +249,7 @@ openrp-toolkit/
 
 ## Community Creator & Maintainer
 
-* **Author**: **Kaa** ([@kaaelix](https://github.com/kaaelix))
+* **Author**: **kaaelix** ([@kaaelix](https://github.com/kaaelix))
 * **OpenRP Profile**: [@Seraaa](https://openrp.ai/Seraaa)
 * **GitHub Repository**: [https://github.com/kaaelix/openrp-toolkit](https://github.com/kaaelix/openrp-toolkit)
 * **Issue Tracker**: [https://github.com/kaaelix/openrp-toolkit/issues](https://github.com/kaaelix/openrp-toolkit/issues)
