@@ -42,13 +42,19 @@
 
 You can install, configure, and use the OpenRP Toolkit via `npx` (zero install) or as a global npm package:
 
-### Method 1: Interactive 1-Command Setup via NPX (Recommended)
+### Method 1: Interactive 1-Command Setup & Auto-Updater (Recommended)
 
-Run the interactive installer:
+Run the interactive installer or auto-updater:
 ```bash
+# Auto-sync latest skills to all detected AI assistants:
+npx openrp-toolkit sync
+
+# Or run 1-line curl auto-updater (Linux / macOS / WSL):
+curl -sSL https://raw.githubusercontent.com/kaaelix/openrp-toolkit/main/install.sh | bash
+
+# Interactive setup wizard:
 npx openrp-toolkit install
 ```
-*(Alternative alias: `npx openrp-toolkit add`)*
 
 The installer scans your local system and automatically detects:
 * Google Antigravity & Gemini CLI (`~/.agents/skills/openrp` and `mcp_config.json`)

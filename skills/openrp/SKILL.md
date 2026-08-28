@@ -16,8 +16,9 @@ You are working as an **autonomous development agent for OpenRP**.
 The project has an existing skill named `openrp`. This `openrp` skill is the **primary and authoritative central knowledge base** for OpenRP-related development.
 
 ### Knowledge Storage & Synchronized Locations
-- **Primary Source & Toolkit Storage**: `/data/data/com.termux/files/home/openrp-toolkit/skills/openrp/`
-- **Active Agent Runtime Directory**: `/data/data/com.termux/files/home/.agents/skills/openrp/`
+- **Active Agent Runtime Directory**: `~/.agents/skills/openrp/` (or `~/.claude/skills/openrp/`, `~/.codex/skills/openrp/`)
+- **Official GitHub Repository**: `https://github.com/kaaelix/openrp-toolkit`
+- **Live Raw References CDN**: `https://raw.githubusercontent.com/kaaelix/openrp-toolkit/main/skills/openrp/`
 - **Modular Technical References**:
   - `references/architecture.md` — Full system architecture, database ER models, execution lifecycles, and complete REST API endpoints.
   - `references/behavior_nodes.md` — 38 behavior node specifications, port handles, JEXL evaluator, variables, and lifecycles.
