@@ -123,7 +123,7 @@ Wrap network calls (`utilities/http_request`) with `control_flow/try`. Route the
 ### Rule 7: End-to-End Topological Continuity & Connectivity Requirements
 Behavior node connectivity rules depend strictly on node category and runtime semantics:
 
-#### 1. Node Wajib Tersambung (Mandatory Execution Chain)
+#### 1. Mandatory Execution Chains
 These nodes process state, invoke models, or dispatch actions. If disconnected, they will **never execute** and referencing their outputs will return `null`:
 - **Root Triggers**: `events/chat_message` (must have outgoing `next`).
 - **Core Storage**: `storage/get_chat_message`, `storage/get_chat`, `storage/get_chat_participant`, `storage/get_characters`, `storage/get_character`, `storage/get_lores`, `storage/get_lore`, `storage/get_character_memories`, `storage/get_chat_messages`.
@@ -131,11 +131,11 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 - **AI Engine**: `ai/get_default_model`, `ai/get_models`, `ai/get_model`, `ai/count_tokens`, `ai/prune_text`, `ai/generate_embeddings`, `ai/llm`.
 - **Control Gateways**: `control_flow/split` $\to$ `control_flow/sync`, `control_flow/if` $\to$ `control_flow/end_if`, `control_flow/repeat_until`.
 
-#### 2. Node Tidak Wajib / Opsional (Optional / Canvas-Only)
+#### 2. Optional / Canvas-Only Nodes
 - **Canvas Annotations (`utilities/comment`)**: Sticky notes for developer documentation. No input/output ports.
 - **Terminal Exits**: Final nodes in a workflow (`storage/insert_chat_message`, `storage/update_typing_status` set to false) do not require outgoing `next` edges.
 
-#### 3. Node Cadangan / Fallback (Error & Alternative Branch Handlers)
+#### 3. Fallback & Error Branch Handlers
 - **Error Trapping (`control_flow/try.error`)**: Route to `storage/broadcast_failed_chat_message` or a fallback `storage/insert_chat_message` to gracefully handle network/webhook failures.
 - **False/Alternative Path (`control_flow/if.false`)**: Connect to a `control_flow/wait` or fallback `ai/llm` before converging into `control_flow/end_if`.
 
@@ -152,7 +152,7 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 - **World & Character Co-Location**: When testing or executing behavior pipelines in a World (`worldId`), the character (`characterId`) used for testing **MUST belong to that exact same World**. Using a character from a different World breaks RAG vector lore lookup, context retrieval, and causes permission errors.
 - **Behavior Binding Prerequisite**: Before initiating a chat session or sending test messages (`openrp_send_message`) to trigger the behavior pipeline (`events/chat_message`), the behavior graph **MUST already be explicitly attached/set to that character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`). If the behavior is not attached, OpenRP defaults to generic fallback chat and the behavior pipeline will not execute.
 
-## Tool Usage Guide: `openrp_edit_behavior_node` vs `openrp_update_behavior`
+## 7. Tool Usage Guide: `openrp_edit_behavior_node` vs `openrp_update_behavior`
 
 | Task | Recommended MCP Tool | Why |
 |---|---|---|
@@ -161,50 +161,11 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 | Reorganizing canvas layout coordinates ($X, Y$) | `openrp_update_behavior` | Repositions all nodes into structured grid columns. |
 | Creating a completely new behavior workflow | `openrp_deploy_behavior` | Creates the behavior record, builds the graph, and optionally binds it to a character. |
 
-## MCP Tool Index (Complete 31 Tools Reference)
+---
 
-The OpenRP MCP Server equips agents with 31 programmatic developer tools:
+## 8. Complete 40 MCP Tools Reference Guide
 
-### 1. Authentication & Profile (3 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_set_auth` | `cookie`, `token`, `userId`, `worldId` | Configure session credentials and activate auto-refresh token daemon. |
-| `openrp_refresh_token` | *(none)* | Manually refresh Supabase JWT session token. |
-| `openrp_get_me` | *(none)* | Fetch authenticated user profile, tier, settings, and credit balance. |
-
-### 2. World Management (5 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_list_my_worlds` | `page`, `limit` | List all worlds owned by the authenticated user. |
-| `openrp_get_world` | `userId`, `worldId` | Retrieve full world metadata, lorebook, assets, and visibility. |
-| `openrp_create_world` | `userId`, `name`, `handle`, `description`, `visibility` | Create a new world record. |
-| `openrp_update_world` | `userId`, `worldId`, `name`, `description`, `readme`, `visibility`, `tags` | Update world details and settings. |
-| `openrp_delete_world` | `userId`, `worldId` | Permanently delete a world record. |
-
-### 3. Lorebook System (5 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_list_lores` | `userId`, `worldId`, `page`, `limit` | List all lorebook fact entries in a world. |
-| `openrp_get_lore` | `userId`, `worldId`, `loreId` | Retrieve detailed content of a single lore entry. |
-| `openrp_create_lore` | `userId`, `worldId`, `title`, `handle`, `content`, `isExclusive`, `tags` | Create a new lore fact entry. |
-| `openrp_update_lore` | `userId`, `worldId`, `loreId`, `title`, `content`, `isExclusive`, `tags` | Update an existing lore entry. |
-| `openrp_delete_lore` | `userId`, `worldId`, `loreId` | Delete a lore entry from the world. |
-
-### 4. Character Studio (3 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_list_characters` | `userId`, `worldId`, `page`, `limit` | List all characters in a world. |
-| `openrp_get_character` | `characterId` | Retrieve character persona, system prompt, dialog examples, and avatar. |
-| `openrp_update_character` | `characterId`, `name`, `shortDescription`, `prompt`, `dialogExamples` | Update character persona and configuration. |
-
-### 5. Behavior Engine (7 Tools)
-| Tool Name | Parameters | Description |
-|---|---|---|
-| `openrp_list_behaviors` | `userId`, `worldId`, `page`, `limit` | List all behaviors defined in a world. |
-| `openrp_get_behavior` | `userId`, `worldId`, `behaviorId` | Retrieve behavior graph nodes, edges, and configuration. |
-| `openrp_deploy_behavior` | `userId`, `worldId`, `name`, `handle`, `graph`, `characterId`, `deleteOldBehaviors` | Create, sanitize (`xy-edge__`), and deploy a new behavior graph. |
-| `openrp_edit_behavior_node` | `userId`, `worldId`, `behaviorId`, `nodeId`, `nodeData` | Fast in-place update of a single node's `data` payload. |
-The OpenRP MCP Server exposes **40 high-level tools** organized into 9 operational domains:
+The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9 operational domains:
 
 1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
