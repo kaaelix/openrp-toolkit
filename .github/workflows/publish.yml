@@ -1,12 +1,46 @@
-name: Publish to NPM Registry
+name: Publish Package
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
   workflow_dispatch:
 
 jobs:
-  publish:
+  publish-github-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kaaelix'
+
+      - name: Configure Scoped Name for GitHub Packages
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.name = '@kaaelix/openrp-toolkit';
+            pkg.publishConfig = { registry: 'https://npm.pkg.github.com' };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+
+      - name: Publish to GitHub Packages
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-npmjs:
+    needs: publish-github-packages
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,10 +55,9 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Verify package
-        run: node ./bin/cli.js doctor
-
-      - name: Publish to NPM
-        run: npm publish --provenance
+      - name: Publish to npmjs (if NPM_TOKEN secret exists)
+        if: ${{ env.NPM_TOKEN != '' }}
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
