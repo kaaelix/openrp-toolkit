@@ -6,8 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-Kaa-FF4081?style=for-the-badge)](https://openrp.ai/Seraaa)
 
-> **Created & Maintained with ❤️ by Kaa** (`@Seraaa`)  
-> *The ultimate autonomous AI agent skill and developer suite for [OpenRP.ai](https://openrp.ai).*
+> **Lead Architect & Maintainer**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))  
+> *Enterprise autonomous AI agent skill and Model Context Protocol (MCP) suite for [OpenRP.ai](https://openrp.ai).*
 
 ---
 
@@ -220,11 +220,12 @@ openrp-toolkit/
 
 ---
 
-## 👨‍💻 Author & Credits
+## 👨‍💻 Project Maintainer & Technical Leadership
 
-* **Crafted by**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))
+* **Lead Architect & Developer**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))
 * **Platform**: [OpenRP.ai](https://openrp.ai)
-* **Contributions**: Pull requests, issues, and graph templates are welcome!
+* **Standard**: Model Context Protocol (MCP) Standard `2024-11-05`
+* **Contributions**: Pull requests, issues, and graph topology contributions are welcome.
 
 ---
 
