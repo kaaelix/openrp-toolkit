@@ -170,7 +170,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
 3. **Lorebook System** (7 tools): `openrp_list_lores`, `openrp_list_lore_characters`, `openrp_list_character_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
-4. **Character Studio & Factions** (8 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
+4. **Character Studio & Factions** (9 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
 6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
 7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
@@ -179,7 +179,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 
 ---
 
-## 2. Complete 46 MCP Tools Reference Guide
+## 2. Complete 47 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
@@ -221,6 +221,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 | `openrp_list_characters` | `userId?`, `worldId?` | Lists all character bots residing inside a world |
 | `openrp_list_character_groups` | `worldId?` | Lists all Character Groups and faction hierarchies in a world |
 | `openrp_create_character_group` | `worldId?`, `name`, `handle`, `description?`, `parentGroupId?`, `autoAddMembers?` | Creates a new faction / character group in a world |
+| `openrp_update_character_group` | `groupId`, `name?`, `handle?`, `description?`, `parentGroupId?`, `autoAddMembers?`, `avatarPath?` | Updates an existing character group / faction |
 | `openrp_delete_character_group` | `groupId` | Permanently deletes a character group |
 | `openrp_get_character` | `characterId?` | Retrieves full persona details, system prompt, greetings, dialogs, and avatar URL |
 | `openrp_create_character` | `userId?`, `worldId?`, `name`, `handle`, `shortDescription?`, `personality?`, `description?`, `status?`, `dialogs?` | Creates a new character bot in a world |

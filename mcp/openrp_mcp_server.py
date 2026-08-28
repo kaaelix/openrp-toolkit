@@ -469,6 +469,23 @@ TOOLS = [
         }
     },
     {
+        "name": "openrp_update_character_group",
+        "description": "Update details of an existing Character Group (name, handle, description, autoAddMembers, avatarPath).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "groupId": {"type": "string", "description": "Character Group ID to update"},
+                "name": {"type": "string", "description": "Updated Group Name"},
+                "handle": {"type": "string", "description": "Updated Group Handle slug"},
+                "description": {"type": "string", "description": "Updated description"},
+                "parentGroupId": {"type": "string", "description": "Parent Group ID or null"},
+                "autoAddMembers": {"type": "boolean", "description": "Automatically add new characters to this group"},
+                "avatarPath": {"type": "string", "description": "Avatar image URL or path"}
+            },
+            "required": ["groupId"]
+        }
+    },
+    {
         "name": "openrp_delete_character_group",
         "description": "Delete a Character Group from a World.",
         "inputSchema": {
@@ -1086,6 +1103,16 @@ def handle_tool_call(name, args):
         }
         return make_request(f"/api/v1/worlds/{w}/character-groups", method="POST", body=payload)
         
+    elif name == "openrp_update_character_group":
+        group_id = args.get("groupId") or args.get("characterGroupId")
+        if not group_id:
+            return {"error": True, "message": "groupId is required"}
+        payload = {}
+        for k in ["name", "handle", "description", "parentGroupId", "autoAddMembers", "avatarPath"]:
+            if k in args and args[k] is not None:
+                payload[k] = args[k]
+        return make_request(f"/api/v1/character-groups/{group_id}", method="PATCH", body=payload)
+
     elif name == "openrp_delete_character_group":
         group_id = args.get("groupId") or args.get("characterGroupId")
         if not group_id:
