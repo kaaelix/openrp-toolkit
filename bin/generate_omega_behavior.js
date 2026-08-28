@@ -3,14 +3,7 @@
 /**
  * AETHERIS-Omega: Quantum RPG Combat Arbiter & Multimodal World Engine
  * 
- * 18-Node High-Complexity DAG Generator & Deployer
- * Incorporating:
- * - Dynamic D20 Dice & Critical Multiplier arithmetic
- * - Lorebook Semantic Injection & Mapping
- * - Token Budget Tracking
- * - Resilient Error Boundary Try-Catch
- * - Snake S-Curve Spatial Geometry
- * - Strict ReactFlow Edge & Zod Port Invariants
+ * 18-Node High-Complexity DAG Generator
  */
 
 const fs = require('fs');
@@ -38,7 +31,7 @@ const nodes = [
     lcaNodeId: null
   },
   {
-    id: "getChat",
+    id: "chat",
     type: "storage/get_chat",
     position: { x: 600, y: 0 },
     data: {
@@ -52,7 +45,7 @@ const nodes = [
     type: "utilities/filter",
     position: { x: 900, y: 0 },
     data: {
-      list: { "$expression": "getChat.data.participants.data" },
+      list: { "$expression": "chat.participants.data" },
       itemCondition: {
         "$expression": "item.userId === null && item.characterId !== null"
       }
@@ -72,7 +65,7 @@ const nodes = [
     lcaNodeId: null
   },
   {
-    id: "getBotCharacter",
+    id: "character",
     type: "storage/get_character",
     position: { x: 600, y: 220 },
     data: {
@@ -96,7 +89,7 @@ const nodes = [
         },
         {
           key: { "$template": "damageScore" },
-          value: { "$expression": "Math.floor((Math.random() * 35 + 15) * (Math.floor(Math.random() * 20) + 1 >= 18 ? 2.5 : 1.0))" }
+          value: { "$expression": "Math.floor(Math.random() * 35) + 15" }
         }
       ]
     },
@@ -107,7 +100,7 @@ const nodes = [
     type: "utilities/map",
     position: { x: 0, y: 220 },
     data: {
-      list: { "$expression": "getChat.data.messages.data.reverse()" },
+      list: { "$expression": "chat.messages.data.reverse()" },
       itemTemplate: {
         "$template": "{{ item.participant ? item.participant.name : 'Adventurer' }}: {{ item.content }}"
       }
@@ -127,7 +120,7 @@ const nodes = [
     lcaNodeId: null
   },
   {
-    id: "countContextTokens",
+    id: "countTokens",
     type: "ai/count_tokens",
     position: { x: 300, y: 440 },
     data: {
@@ -136,7 +129,7 @@ const nodes = [
     lcaNodeId: null
   },
   {
-    id: "searchLore",
+    id: "lores",
     type: "storage/get_lores",
     position: { x: 600, y: 440 },
     data: {
@@ -149,7 +142,7 @@ const nodes = [
     type: "utilities/map",
     position: { x: 900, y: 440 },
     data: {
-      list: { "$expression": "searchLore.data" },
+      list: { "$expression": "lores.data" },
       itemTemplate: {
         "$template": "<lore_entry title=\"{{ item.title }}\">{{ item.content }}</lore_entry>"
       }
@@ -180,9 +173,9 @@ const nodes = [
     type: "ai/llm",
     position: { x: 300, y: 660 },
     data: {
-      modelId: { "$expression": "getChat.data.chatModelId" },
+      modelId: { "$expression": "chat.chatModelId" },
       systemPrompt: {
-        "$template": "You are {{ getBotCharacter.name }}, an elite RPG persona and combat arbiter in Aetheria.\nPersonality & Directives: {{ getBotCharacter.personality }}\nWorld Lore Context:\n<world_lore>\n{{ joinLores.text }}\n</world_lore>\n\nRPG Combat Engine Metrics:\n- D20 Dice Roll: {{ $variables.d20Roll }}/20\n- Mana Consumed: {{ $variables.manaCost }} MP\n- Damage Calculated: {{ $variables.damageScore }} HP\n\nInstructions:\n1. Narrate the dramatic outcome of the player's action matching the D20 result (>= 15: Critical Triumph, <= 5: Perilous Fumble, otherwise solid success).\n2. Maintain deep in-character immersion, dramatic sensory prose, and tactical depth.\n3. Conclude with an ASCII RPG Combat Status Card showing [D20 Roll], [Damage Dealt], and [Mana Used]."
+        "$template": "You are {{ character.name }}, an elite RPG persona and combat arbiter in Aetheria.\nPersonality & Directives: {{ character.personality }}\nWorld Lore Context:\n<world_lore>\n{{ joinLores.text }}\n</world_lore>\n\nRPG Combat Engine Metrics:\n- D20 Dice Roll: {{ $variables.d20Roll }}/20\n- Mana Consumed: {{ $variables.manaCost }} MP\n- Damage Calculated: {{ $variables.damageScore }} HP\n\nInstructions:\n1. Narrate the dramatic outcome of the player's action matching the D20 result (>= 15: Critical Triumph, <= 5: Perilous Fumble, otherwise solid success).\n2. Maintain deep in-character immersion, dramatic sensory prose, and tactical depth.\n3. Conclude with an ASCII RPG Combat Status Card showing [D20 Roll], [Damage Dealt], and [Mana Used]."
       },
       messages: [
         {
@@ -243,15 +236,15 @@ const edges = [
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__getChatMessagenext-getChatprevious",
+    id: "xy-edge__getChatMessagenext-chatprevious",
     source: "getChatMessage",
-    target: "getChat",
+    target: "chat",
     sourceHandle: "next",
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__getChatnext-filterBotprevious",
-    source: "getChat",
+    id: "xy-edge__chatnext-filterBotprevious",
+    source: "chat",
     target: "filterBot",
     sourceHandle: "next",
     targetHandle: "previous"
@@ -265,15 +258,15 @@ const edges = [
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__startTypingnext-getBotCharacterprevious",
+    id: "xy-edge__startTypingnext-characterprevious",
     source: "startTyping",
-    target: "getBotCharacter",
+    target: "character",
     sourceHandle: "next",
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__getBotCharacternext-calcQuantumStateprevious",
-    source: "getBotCharacter",
+    id: "xy-edge__characternext-calcQuantumStateprevious",
+    source: "character",
     target: "calcQuantumState",
     sourceHandle: "next",
     targetHandle: "previous"
@@ -294,22 +287,22 @@ const edges = [
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__joinHistorynext-countContextTokensprevious",
+    id: "xy-edge__joinHistorynext-countTokensprevious",
     source: "joinHistory",
-    target: "countContextTokens",
+    target: "countTokens",
     sourceHandle: "next",
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__countContextTokensnext-searchLoreprevious",
-    source: "countContextTokens",
-    target: "searchLore",
+    id: "xy-edge__countTokensnext-loresprevious",
+    source: "countTokens",
+    target: "lores",
     sourceHandle: "next",
     targetHandle: "previous"
   },
   {
-    id: "xy-edge__searchLorenext-mapLoresprevious",
-    source: "searchLore",
+    id: "xy-edge__loresnext-mapLoresprevious",
+    source: "lores",
     target: "mapLores",
     sourceHandle: "next",
     targetHandle: "previous"
