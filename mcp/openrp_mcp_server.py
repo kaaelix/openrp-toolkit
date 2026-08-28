@@ -699,9 +699,10 @@ TOOLS = [
             "properties": {
                 "chatId": {"type": "string", "description": "Chat Room ID"},
                 "content": {"type": "string", "description": "Message content (Markdown supported)"},
-                "chatParticipantId": {"type": "string", "description": "Participant ID sending the message"}
+                "parentId": {"type": "string", "description": "Optional Parent message ID to reply to"},
+                "chatParticipantId": {"type": "string", "description": "Optional Participant ID sending the message"}
             },
-            "required": ["chatId", "content", "chatParticipantId"]
+            "required": ["chatId", "content"]
         }
     },
 
@@ -1055,6 +1056,7 @@ def handle_tool_call(name, args):
             "personality": args.get("personality", ""),
             "description": args.get("description", ""),
             "status": args.get("status", "Online"),
+            "greetings": args.get("greetings", []),
             "dialogs": args.get("dialogs", [])
         }
         return make_request(f"/api/users/{u}/worlds/{w}/characters", method="POST", body=payload)
@@ -1130,10 +1132,18 @@ def handle_tool_call(name, args):
     elif name == "openrp_get_prompt":
         u = args.get("userId") or auth_state.get("userId")
         w = args.get("worldId") or auth_state.get("worldId")
-        p = args.get("promptId")
+        p = args.get("promptId") or args.get("promptHandle")
         if not u or not w or not p:
             return {"error": True, "message": "userId, worldId, and promptId are required"}
-        return make_request(f"/api/users/{u}/worlds/{w}/prompts/{p}")
+        curr = make_request(f"/api/users/{u}/worlds/{w}/prompts")
+        if curr.get("error") or not curr.get("data"):
+            return curr
+        prompts = curr["data"] if isinstance(curr["data"], list) else curr["data"].get("data", [])
+        for item in prompts:
+            meta = item.get("metadata", item)
+            if meta.get("id") == p or meta.get("handle") == p or meta.get("name") == p:
+                return {"data": item, "error": None}
+        return {"data": None, "error": {"code": "not_found", "message": "Prompt template not found"}}
         
     elif name == "openrp_create_prompt":
         u = args.get("userId") or auth_state.get("userId")
@@ -1326,10 +1336,12 @@ def handle_tool_call(name, args):
     elif name == "openrp_send_message":
         chat_id = args["chatId"]
         payload = {
-            "chatId": chat_id,
-            "content": args["content"],
-            "chatParticipantId": args["chatParticipantId"]
+            "content": args["content"]
         }
+        if "parentId" in args and args["parentId"]:
+            payload["parentId"] = args["parentId"]
+        if "chatParticipantId" in args and args["chatParticipantId"]:
+            payload["chatParticipantId"] = args["chatParticipantId"]
         return make_request(f"/api/chats/{chat_id}/messages", method="POST", body=payload)
         
     # --- AI MODELS & DISCOVERY ---
