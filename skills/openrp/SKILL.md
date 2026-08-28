@@ -35,6 +35,23 @@ OpenRP separates world design, character identities, and interactive execution i
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.
 
+## Slash Command Direct Dispatch (`/openrp-toolkit` & `/openrp`)
+
+When the user invokes `/openrp-toolkit` or `/openrp` in chat, directly route the request to the corresponding tool family:
+* `/openrp-toolkit init` -> Authenticate and load session profile (`openrp_set_auth`, `openrp_get_me`).
+* `/openrp-toolkit world [list|get|create|update|readme|delete]` -> World universe and documentation management (`openrp_worlds`).
+* `/openrp-toolkit lore [list|create|update|delete|access]` -> Factual lorebooks and confidential exclusive lore (`openrp_lores`).
+* `/openrp-toolkit character [list|get|create|update|delete]` -> Autonomous personas, greetings, dialogs (`openrp_characters`).
+* `/openrp-toolkit group [list|create|update|delete]` -> Factions and character groups (`openrp_character_groups`).
+* `/openrp-toolkit prompt [list|get|create|delete]` -> Reusable system prompt templates (`openrp_prompts`).
+* `/openrp-toolkit behavior [list|deploy|get|edit-node|attach|delete]` -> 38-node ReactFlow behavior graphs (`openrp_behaviors`).
+* `/openrp-toolkit group-chat [mention-gate|round-robin|game-master]` -> Multi-agent group chat topologies.
+* `/openrp-toolkit trace [search|get|nodes]` -> Behavior execution logs and resolved node trace inspection.
+* `/openrp-toolkit chat [create|list|get|messages|send]` -> Live room testing and message dispatching.
+* `/openrp-toolkit doctor` -> Diagnostics on runtime, packages, credentials, and API endpoints.
+
+---
+
 ## Upstream Official Documentation Links
 
 For further deep dives, live updates, or raw specification references, refer to the official OpenRP resources:

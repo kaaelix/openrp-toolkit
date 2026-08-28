@@ -198,6 +198,52 @@ Running OpenRP Toolkit Diagnostics...
 
 ---
 
+## AI Agent Slash Commands (`/openrp-toolkit` & `/openrp`)
+
+When using AI coding assistants like **Google Antigravity**, **Gemini CLI**, **Claude Code**, or **Cursor**, you can control the entire OpenRP ecosystem directly using the `/openrp-toolkit` or `/openrp` slash command:
+
+```
+/openrp-toolkit [subcommand] [arguments...]
+```
+
+### Complete Subcommand Routing Matrix
+
+| Subcommand | Parameters / Actions | Description & MCP Routing |
+|---|---|---|
+| `/openrp-toolkit init` | `[token]` | Interactive authentication setup & JWT auto-refresh daemon initialization (`openrp_set_auth`, `openrp_get_me`). |
+| `/openrp-toolkit world` | `list` / `get` / `create` / `update` / `readme` / `delete` | Manage World universes, settings, statistics, and 5,000-word Markdown README documentation. |
+| `/openrp-toolkit lore` | `list` / `create` / `update` / `delete` / `access` | Architect factual semantic lorebook entries with support for confidential exclusive lore (`isExclusive: true`). |
+| `/openrp-toolkit character`| `list` / `get` / `create` / `update` / `delete` | Construct autonomous AI character personas, greetings, and dialog presets. |
+| `/openrp-toolkit group` | `list` / `create` / `update` / `delete` | Group characters into factions, guilds, combat squads, or organizational units (`openrp_character_groups`). |
+| `/openrp-toolkit prompt` | `list` / `get` / `create` / `delete` | Create and maintain reusable prompt templates with variable injection (`{{reply_char.name}}`). |
+| `/openrp-toolkit behavior`| `list` / `deploy` / `get` / `edit-node` / `attach` / `delete` | Deploy and surgically modify 38-node ReactFlow behavior graphs with automated graph sanitization. |
+| `/openrp-toolkit group-chat` | `mention-gate` / `round-robin` / `game-master` | Deploy coordinated multi-agent group chat topologies with turn management gates. |
+| `/openrp-toolkit trace` | `search` / `get <id>` / `nodes <id>` | Inspect live behavior execution logs, status (`COMPLETED`/`FAILED`), and step-by-step resolved node outputs. |
+| `/openrp-toolkit chat` | `create` / `list` / `get` / `messages` / `send` | Create test chatrooms, inspect conversation histories, and dispatch live trigger messages. |
+| `/openrp-toolkit doctor` | *(none)* | Execute 4-point diagnostic verification on runtime, package files, authentication, and API endpoints. |
+
+### Practical Slash Command Invocation Examples:
+
+* **Deploy an NPC character and behavior graph**:
+  ```
+  /openrp-toolkit character create "Eldrin the Sage" "eldrin"
+  /openrp-toolkit behavior deploy "Eldrin Combat Logic" "eldrin-combat"
+  ```
+* **Update world documentation with rich Markdown**:
+  ```
+  /openrp-toolkit world readme
+  ```
+* **Debug a failed behavior execution**:
+  ```
+  /openrp-toolkit trace nodes 01a042e6-7f5a-75ea-a2da-2756ed0a2cf5
+  ```
+* **Add confidential secret lore accessible only by Eldrin**:
+  ```
+  /openrp-toolkit lore create "Ancient Relic Map" "relic-map" "Hidden inside the elder crypt..." --exclusive
+  ```
+
+---
+
 ## Complete 47 MCP Tools Reference Suite
 
 | No | Category | Count | Tool Names & Summary |
