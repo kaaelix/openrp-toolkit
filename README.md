@@ -220,13 +220,13 @@ openrp-toolkit/
 
 ---
 
-## 👨‍💻 Community Creator & Maintainer
+## 👥 Community Creator & Maintainer
 
-* **Created by**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa)) — *OpenRP Community Creator & Developer*
+* **Created by**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa)) — *OpenRP Community Creator*
 * **Platform**: [OpenRP.ai](https://openrp.ai)
 * **Standard**: Model Context Protocol (MCP) Standard `2024-11-05`
-* **Disclaimer**: This is an independent, community-driven open-source project created for the OpenRP.ai creator community and AI agents. It is not an official product of, nor affiliated with, OpenRP.ai core platform developers.
-* **Contributions**: Community pull requests, bug reports, and graph templates are warmly welcome!
+* **Disclaimer**: This is an independent, community-driven open-source project created for the OpenRP.ai creator community and AI agents. It is not an official product of, nor affiliated with, OpenRP.ai.
+* **Contributions**: Community pull requests, feedback, and graph templates are warmly welcome!
 
 ---
 
