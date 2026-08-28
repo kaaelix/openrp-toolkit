@@ -178,6 +178,7 @@ OpenRP separates world design, character identities, and interactive execution i
 - **[Worlds & Characters Reference](./references/worlds_and_characters.md)**: World CRUD operations, RAG vector embeddings, tier visibility controls (`public`, `unlisted`, `private`), character schemas, and few-shot formatting.
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
 - **[Production Blueprints & Verified Graphs](./references/production_blueprints.md)**: 5 copy-pasteable production blueprints (Official RAG Chat, AI Image Synthesis, Zero-LLM Fast Path, Multi-Agent Party, Eco-Mode Pruning).
+- **[Canvas Layouts & Edge Styling Reference](./references/canvas_layouts_and_edge_styles.md)**: 5 visual layout modes (Snake S-Curve, Bento Modular, Diamond Fork-Join, Cyberpunk Wave, Radial Orbit) and animated color-coded ReactFlow edge wires.
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.
 
 ## Slash Command Direct Dispatch (`/openrp-toolkit` & `/openrp`)
