@@ -54,7 +54,7 @@ async function makeRequest(endpoint, options = {}) {
   const method = options.method || 'GET';
   const headers = {
     'Content-Type': 'application/json',
-    'User-Agent': 'OpenRP-Node-MCP/3.0.0 (Node.js)',
+    'User-Agent': 'OpenRP-Node-MCP/1.0.0 (Node.js)',
     ...(options.headers || {})
   };
 
@@ -1420,7 +1420,7 @@ rl.on('line', async (line) => {
         },
         serverInfo: {
           name: 'openrp-mcp-server-node',
-          version: '3.0.0'
+          version: '1.0.0'
         }
       }
     });

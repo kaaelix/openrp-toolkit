@@ -1,8 +1,8 @@
 {
   "name": "openrp-toolkit",
-  "version": "3.0.0",
+  "version": "1.0.0",
   "description": "Model Context Protocol (MCP) Server and AI Agent Skill Suite for OpenRP.ai",
-  "main": "bin/cli.js",
+  "main": "mcp/server.js",
   "bin": {
     "openrp-toolkit": "./bin/cli.js",
     "openrp": "./bin/cli.js"
@@ -32,7 +32,18 @@
     "cursor",
     "windsurf"
   ],
-  "author": "Kaa",
+  "author": {
+    "name": "Kaa",
+    "url": "https://github.com/kaaelix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaaelix/openrp-toolkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kaaelix/openrp-toolkit/issues"
+  },
+  "homepage": "https://github.com/kaaelix/openrp-toolkit#readme",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

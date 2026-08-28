@@ -25,8 +25,8 @@ const args = process.argv.slice(2);
 const command = args[0] || 'serve';
 
 function printBanner() {
-  console.log('┌  OpenRP Toolkit & MCP Suite (v3.0.0)');
-  console.log('│  Maintainer: Kaa (OpenRP Community Creator)');
+  console.log('┌  OpenRP Toolkit & MCP Suite (v1.0.0)');
+  console.log('│  Maintainer: Kaa (https://github.com/kaaelix)');
   console.log('│  Platform: https://openrp.ai');
   console.log('└───────────────────────────────────────────────────────────────\n');
 }
