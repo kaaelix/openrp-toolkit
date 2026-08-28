@@ -111,40 +111,139 @@ Every message generated in OpenRP contains an execution trace link:
 - Root Cause 3: Invalid JSON or malformed ReactFlow graph payload.
 - Resolution: Ensure route URLs use the Supabase Auth UID (`0d24041d-...`), and character payloads include explicit empty arrays for `dialogs` and `greetings`.
 
-## 5. Behavior Engine Runtime Errors & Trace Anatomy
+## 5. Behavior Engine Runtime Traces: COMPLETED vs FAILED
 
-### A. Real-World Node Execution Trace Anatomy
-Every node execution returned by `GET /api/v1/behavior-executions/{id}/node-executions` contains:
+### A. Real-World `BEHAVIOR_EXECUTION_STATUS_COMPLETED` Trace Anatomy
+When a behavior graph executes successfully, every node is marked `BEHAVIOR_EXECUTION_STATUS_COMPLETED` and emits a rich output payload:
+
 ```json
 {
-  "id": "01a042e6-8441-7498-be4c-b3b4634b4228",
+  "id": "01a042e6-83fe-733b-bd2a-c0a0b1437252",
   "executionId": "01a042e6-7f5a-75ea-a2da-2756ed0a2cf5",
   "nodeId": "insertChatMessage",
   "iteration": 0,
   "globalIteration": 21,
   "status": "BEHAVIOR_EXECUTION_STATUS_COMPLETED",
   "output": {
-    "data": { "id": "...", "content": "..." }
+    "data": {
+      "id": "01a042e6-8412-7044-a4b6-a441fc870eb4",
+      "chatId": "01a042a8-9371-72c9-a666-4b2e474006e3",
+      "status": "SENT",
+      "content": "![](https://game-liart-nine-49.vercel.app/api/tictactoe?b=O2O4O6XXX&d=e&p=X)\n\n### TIC-TAC-TOE\n**Player (X)** vs **Bot (O)**\n\n[VICTORY] You connected 3 in a row! Pick a spot (1-9) or type reset to play again."
+    }
   },
   "history": {
     "chatMessage": ["01a042e6-7f64-70b3-bb30-3b66733665c7"],
-    "getChatMessage": ["01a042e6-7f65-73a9-bef9-9a2818f3669c"]
+    "getChatMessage": ["01a042e6-7f65-73a9-bef9-9a2818f3669c"],
+    "filterReplyingParticipant": ["01a042e6-7f8e-74dd-898e-60f8737297fc"],
+    "setVariablePlayerWon": ["01a042e6-800f-7247-8a1c-40cda0b194ca"]
   },
-  "startedAt": "2026-08-27T11:06:38.530Z",
-  "finishedAt": "2026-08-27T11:06:38.603Z"
+  "startedAt": "2026-08-27T11:06:38.450Z",
+  "finishedAt": "2026-08-27T11:06:38.528Z"
 }
 ```
-* **`history`**: Tracks the dependency chain of upstream node executions that supplied context to this node.
-* **`globalIteration`**: Integer indicating the chronological execution order within the DAG run.
 
-### B. Error: Failed to evaluate expression ... Expected comma
-- Cause: The expression contains a JavaScript Regular Expression literal (e.g. `/[1-9]/`).
-- Fix: Replace regex with standard string methods (e.g. `str.indexOf('1') !== -1 ? '1' : ...`).
+* **`globalIteration`**: Monotonically increasing execution step counter (1 to N) confirming DAG topological sort order.
+* **`history`**: Complete upstream dependency map linking every parent node execution that provided runtime input to this node.
+* **`startedAt` / `finishedAt`**: Millisecond timestamps for profiling execution bottlenecks.
 
-### C. Error: Expression is not a function
-- Cause: Calling a string method on an `undefined` variable, typically when accessing a variable created in the same `set_variable` node before evaluation finishes.
-- Fix: Split dependent variable calculations into consecutive `storage/set_variable` nodes.
+---
 
-### D. Sync Node Hanging Indefinitely
-- Cause: A `control_flow/sync` barrier was connected to branches originating from an `if` node. Because only one branch ever runs, the barrier waits forever for the skipped branch.
-- Fix: Use `control_flow/end_if` to merge `if` branches; reserve `sync` exclusively for merging `split` parallel branches.
+### B. Real-World `BEHAVIOR_EXECUTION_STATUS_FAILED` Trace Anatomy
+When an error occurs during execution, the failing node terminates and emits detailed failure diagnostics:
+
+#### Example 1: JEXL Syntax Error (Illegal Regex in Expression)
+```json
+{
+  "id": "01a046a1-9102-7102-bc32-11a22b33c44d",
+  "executionId": "01a046a1-8f55-7221-a123-456789abcdef",
+  "nodeId": "evaluatePlayerMove",
+  "iteration": 0,
+  "globalIteration": 8,
+  "status": "BEHAVIOR_EXECUTION_STATUS_FAILED",
+  "error": {
+    "code": "JEXL_SYNTAX_ERROR",
+    "message": "Failed to evaluate expression: getChatMessage.content.match(/[1-9]/) -> Expected comma or closing bracket at position 31",
+    "nodeId": "evaluatePlayerMove",
+    "nodeType": "storage/set_variable"
+  },
+  "output": null,
+  "startedAt": "2026-08-28T04:12:00.100Z",
+  "finishedAt": "2026-08-28T04:12:00.105Z"
+}
+```
+* **Root Cause**: JEXL parser does not support JavaScript regex literals (`/[1-9]/`).
+* **Fix**: Use `.indexOf()` or string slicing: `getChatMessage.content.indexOf('1') !== -1 ? '1' : ...`.
+
+#### Example 2: External HTTP Request Timeout (`utilities/http_request`)
+```json
+{
+  "id": "01a046a2-1122-7334-9988-aabbccddeeff",
+  "executionId": "01a046a2-0011-7445-bcde-f0123456789a",
+  "nodeId": "fetchExternalGameState",
+  "iteration": 0,
+  "globalIteration": 12,
+  "status": "BEHAVIOR_EXECUTION_STATUS_FAILED",
+  "error": {
+    "code": "HTTP_REQUEST_TIMEOUT",
+    "message": "HTTP request to https://api.game-server.com/state timed out after 30000ms",
+    "nodeId": "fetchExternalGameState",
+    "nodeType": "utilities/http_request"
+  },
+  "output": null,
+  "startedAt": "2026-08-28T04:15:00.000Z",
+  "finishedAt": "2026-08-28T04:15:30.002Z"
+}
+```
+* **Root Cause**: Upstream endpoint failed to respond within OpenRP's 30-second hard timeout.
+* **Fix**: Wrap `utilities/http_request` in a `control_flow/try` node to route timeouts to a fallback recovery branch.
+
+#### Example 3: Missing or Undefined Participant ID in Message Dispatch
+```json
+{
+  "id": "01a046a3-4455-7667-8899-0123456789ab",
+  "executionId": "01a046a3-3344-7778-9abc-def012345678",
+  "nodeId": "sendBotReply",
+  "iteration": 0,
+  "globalIteration": 19,
+  "status": "BEHAVIOR_EXECUTION_STATUS_FAILED",
+  "error": {
+    "code": "BAD_REQUEST_BODY",
+    "message": "Validation failed: chatParticipantId is required and cannot be null",
+    "nodeId": "sendBotReply",
+    "nodeType": "storage/insert_chat_message"
+  },
+  "output": null
+}
+```
+* **Root Cause**: `filterBot.list[0].id` evaluated to `undefined` because the filter condition `item.userId === null` did not match any participants.
+* **Fix**: Verify room participants with `expand: ["participants"]` on `storage/get_chat` and check filter condition `item.userId === null || item.characterId !== null`.
+
+---
+
+### C. Resilient Error Boundary Pattern with `control_flow/try`
+
+To prevent behavior crashes when external APIs or LLMs encounter transient failures:
+
+```
+[Incoming Trigger]
+       │
+       ▼
+ [control_flow/try] ────────────────────────────────────────┐
+       │                                                    │
+ (success port)                                       (error port)
+       │                                                    │
+       ▼                                                    ▼
+[utilities/http_request]                           [storage/broadcast_failed_chat_message]
+       │                                                    │
+       ▼                                                    ▼
+[storage/insert_chat_message]                      [storage/insert_chat_message (Fallback)]
+ "Success: API data returned"                       "Notice: Server is offline, using cache"
+```
+
+1. **`control_flow/try` outputs**:
+   * `success`: Continues normal execution path if all downstream nodes in the protected block succeed.
+   * `error`: Emits `error: { code, message, nodeId, nodeType }` if any protected node fails.
+2. **Fallback Node (`storage/broadcast_failed_chat_message`)**:
+   * Notifies the chatroom with an ephemeral error code without crashing the session.
+   * Allows the bot to gracefully apologize or fallback to cached state.
