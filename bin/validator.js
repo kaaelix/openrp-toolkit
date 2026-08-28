@@ -10,6 +10,7 @@
  * 4. Control Flow Pairing (Split/Sync parity, Repeat Until loop closure)
  * 5. JEXL Expression Syntax & Illegal Regex Detection
  * 6. Variable Store Schema Validation ($template key & $expression value)
+ * 7. Zod Contract Rules (utilities/filter itemCondition, utilities/map itemTemplate, storage participant IDs)
  */
 
 const fs = require('fs');
@@ -70,7 +71,7 @@ function validateBehaviorGraph(graph) {
     incomingEdges.get(edge.target).push(edge);
   });
 
-  // 3. Control Flow & Branch Pairings
+  // 3. Node-Specific Zod Schemas & Control Flow Checks
   nodes.forEach(node => {
     const outs = outgoingEdges.get(node.id) || [];
     const ins = incomingEdges.get(node.id) || [];
@@ -117,7 +118,31 @@ function validateBehaviorGraph(graph) {
       }
     }
 
-    // 4. storage/set_variable Schema Validation
+    // Zod Schema Check: utilities/filter
+    if (node.type === 'utilities/filter') {
+      if (!node.data?.itemCondition || typeof node.data.itemCondition !== 'object' || !node.data.itemCondition.$expression) {
+        issues.errors.push(`utilities/filter node "${node.id}" itemCondition MUST be an object with {$expression: "..."}. Found: ${JSON.stringify(node.data?.itemCondition)}`);
+      }
+    }
+
+    // Zod Schema Check: utilities/map
+    if (node.type === 'utilities/map') {
+      if (!node.data?.itemTemplate || typeof node.data.itemTemplate !== 'object' || (!node.data.itemTemplate.$template && !node.data.itemTemplate.$expression)) {
+        issues.errors.push(`utilities/map node "${node.id}" input MUST be named itemTemplate as an object with {$template: "..."} or {$expression: "..."}. Found: ${JSON.stringify(node.data?.itemTemplate || node.data?.itemExpression)}`);
+      }
+      if (node.data?.itemExpression) {
+        issues.errors.push(`utilities/map node "${node.id}" contains illegal property itemExpression. Rename to itemTemplate.`);
+      }
+    }
+
+    // Zod Schema Check: storage/insert_chat_message & update_typing_status
+    if (node.type === 'storage/insert_chat_message' || node.type === 'storage/update_typing_status') {
+      if (node.data?.participantId && !node.data?.chatParticipantId) {
+        issues.errors.push(`Node "${node.id}" (${node.type}) uses participantId. In OpenRP, the parameter MUST be chatParticipantId.`);
+      }
+    }
+
+    // storage/set_variable Schema Validation
     if (node.type === 'storage/set_variable' && node.data && Array.isArray(node.data.variables)) {
       node.data.variables.forEach((v, vIdx) => {
         if (!v.key || typeof v.key !== 'object' || !v.key.$template) {
@@ -129,17 +154,16 @@ function validateBehaviorGraph(graph) {
       });
     }
 
-    // 5. JEXL Expression Syntax & Illegal Regex Check
-    function checkExpressions(obj, path = '') {
+    // JEXL Expression Syntax & Illegal Regex Check
+    function checkExpressions(obj, currentPath = '') {
       if (!obj || typeof obj !== 'object') return;
       for (const [k, val] of Object.entries(obj)) {
         if (k === '$expression' && typeof val === 'string') {
-          // Check illegal regex literals
           if (/\/[^\/\n]+\/[gimsuy]*/.test(val) && !val.includes('http://') && !val.includes('https://')) {
-            issues.errors.push(`Node "${node.id}" expression contains illegal regex literal in "${path}": ${val}. JEXL parser will throw a syntax error. Use .indexOf() instead.`);
+            issues.errors.push(`Node "${node.id}" expression contains illegal regex literal in "${currentPath}": ${val}. JEXL parser will throw a syntax error. Use .indexOf() instead.`);
           }
         } else if (typeof val === 'object') {
-          checkExpressions(val, path ? `${path}.${k}` : k);
+          checkExpressions(val, currentPath ? `${currentPath}.${k}` : k);
         }
       }
     }
@@ -148,6 +172,11 @@ function validateBehaviorGraph(graph) {
 
   return issues;
 }
+
+module.exports = {
+  validateBehaviorGraph,
+  validateGraph: validateBehaviorGraph
+};
 
 // CLI Execution Support
 if (require.main === module) {
@@ -180,9 +209,7 @@ if (require.main === module) {
       process.exit(1);
     }
   } catch (err) {
-    console.error(`Error reading file: ${err.message}`);
+    console.error(`\x1b[31m[ERROR]\x1b[0m Failed to parse or read file: ${err.message}`);
     process.exit(1);
   }
 }
-
-module.exports = { validateBehaviorGraph };
