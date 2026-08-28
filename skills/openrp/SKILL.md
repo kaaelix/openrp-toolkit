@@ -177,7 +177,7 @@ OpenRP separates world design, character identities, and interactive execution i
 - **[Streaming & Registry Specification](./references/streaming_and_registry.md)**: Real-time LLM response streaming, chunk polling loops, Semver behavior registry publishing, and immutability.
 - **[Worlds & Characters Reference](./references/worlds_and_characters.md)**: World CRUD operations, RAG vector embeddings, tier visibility controls (`public`, `unlisted`, `private`), character schemas, and few-shot formatting.
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
-- **[Official Registry Behaviors Dissection](./references/official_registry_behaviors.md)**: Exact architectural topologies and step traces for `openrp/behaviors/chat` v1.0.6 (67-step streaming RAG) and `openrp/behaviors/generate-image` (AI image webhook synthesis).
+- **[Production Blueprints & Verified Graphs](./references/production_blueprints.md)**: 5 copy-pasteable production blueprints (Official RAG Chat, AI Image Synthesis, Zero-LLM Fast Path, Multi-Agent Party, Eco-Mode Pruning).
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.
 
 ## Slash Command Direct Dispatch (`/openrp-toolkit` & `/openrp`)
