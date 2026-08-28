@@ -1,0 +1,41 @@
+{
+  "name": "openrp-toolkit",
+  "version": "3.0.0",
+  "description": "Model Context Protocol (MCP) Server and AI Agent Skill Suite for OpenRP.ai",
+  "main": "bin/cli.js",
+  "bin": {
+    "openrp-toolkit": "./bin/cli.js",
+    "openrp": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node ./bin/cli.js",
+    "serve": "node ./bin/cli.js serve",
+    "install-skill": "node ./bin/cli.js install",
+    "doctor": "node ./bin/cli.js doctor",
+    "auth": "node ./bin/cli.js auth"
+  },
+  "files": [
+    "bin/",
+    "mcp/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "openrp",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "gemini-cli",
+    "antigravity",
+    "claude-code",
+    "cursor",
+    "windsurf"
+  ],
+  "author": "Kaa",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true
+}
