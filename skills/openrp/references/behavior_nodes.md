@@ -280,13 +280,43 @@ Column 0 (Trigger)   Column 1 (Fork/Sync)   Column 2 (Storage)   Column 3 (AI/Lo
 
 ---
 
-## 6. Node Connectivity Classification (Mandatory, Optional, Fallback)
+## 7. Zero-LLM Deterministic Game Engine Pattern
 
-| Category | Node Types | Role / Connection Rules |
-|---|---|---|
-| **MANDATORY** *(Required)* | `events/chat_message`, `storage/get_*`, `storage/set_variable`, `ai/*`, `utilities/filter`, `utilities/map`, `utilities/join`, `control_flow/split`, `control_flow/if` | **Must be connected** from root trigger downstream. If disconnected, the node will never be executed by the runtime engine. |
-| **OPTIONAL** *(Leaves / Annotation)* | `utilities/comment`, Terminal `storage/insert_chat_message`, Terminal `storage/update_typing_status` | **May have no outgoing connections**. `utilities/comment` does not even require input/output handles as it serves purely as a canvas visual note. |
-| **FALLBACK / ERROR HANDLERS** | `storage/broadcast_failed_chat_message`, Fallback `ai/llm` on `try.error`, Fallback `control_flow/wait` on `if.false` | **Connected to contingency/alternative ports** (`try.error` or `if.false`) to guarantee the bot responds gracefully during errors or unsatisfied conditions. |
+OpenRP allows building 100% deterministic interactive games (such as Tic-Tac-Toe, Rock-Paper-Scissors, Dice Duels, Trivia, and RPG combat engines) **completely without LLM generation nodes**, achieving sub-100ms response times and zero token consumption.
+
+### Zero-LLM Pipeline Blueprint:
+```
+[chat_message]
+      │
+[get_chat_message]
+      │
+[get_chat] ───────────────────────────> [split (outputCount: 2)]
+                                          ├── (out1) ──> [filter (User)] ──> [get_chat_participant] ──┐
+                                          └── (out2) ──> [filter (Bot)]  ──> [update_typing: true] ───┼──> [sync]
+                                                                                                        │
+                                                                                              [get_chat_messages (limit: 10)]
+                                                                                                        │
+                                                                                              [filter (bot messages)]
+                                                                                                        │
+                                                                                              [set_variable (parse state & game rules)]
+                                                                                                        │
+                                                                                              [wait: 1s]
+                                                                                                        │
+                                                                                              [insert_chat_message (state & board)]
+                                                                                                        │
+                                                                                              [update_typing: false]
+```
+
+### Key Technical Rules for Zero-LLM Engines:
+1. **`set_variable` Key-Value Objects**:
+   - `key` **MUST** be defined as an object: `{ "$template": "variableName" }`.
+   - `value` **MUST** be an expression `{ "$expression": "..." }` or template `{ "$template": "..." }`.
+2. **State Serialization in Message Links**:
+   - To maintain state across turns without an external database, serialize the board state into invisible or appended Markdown links (e.g. `[ ](https://openrp.ai/game?state={{ $variables.stateCode }})`).
+   - On the next turn, `get_chat_messages` retrieves the last bot message, parses the state with `.split('?state=')[1].substring(0, 9)`, and applies the player's next move.
+3. **Dynamic Visual Assets**:
+   - Dynamic game boards can be rendered by binding SVG/Canvas generator URLs to Markdown images: `![]({{ $variables.boardImgUrl }})`.
+
 
 
 

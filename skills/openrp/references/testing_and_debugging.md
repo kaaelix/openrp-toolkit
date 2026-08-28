@@ -88,8 +88,9 @@ Every message generated in OpenRP contains an execution trace link:
 
 ### A. HTTP 500: Internal Server Error (`{"code": "internal_server_error"}`)
 - Root Cause 1: Expired Supabase JWT signature. OpenRP returns a 500 error on `/api/users/me` or `/api/users/{userId}/...` when an expired access token is presented.
-- Root Cause 2: Mismatched Route IDs. Providing a `userId` in the URL path that does not match the owner ID of the target `worldId`.
-- Resolution: Call `openrp_set_auth` with fresh cookies or token, and verify that `userId` matches the world creator.
+- Root Cause 2: Unauthenticated / Missing MCP Credentials. When `~/.openrp_mcp_auth.json` is empty or no valid JWT is loaded into MCP server state, public endpoints (`/api/models`, `/api/worlds/discover`) and authenticated endpoints return HTTP 500 (`code: internal_server_error`).
+- Root Cause 3: Missing `userId` in payload. When creating a World or Character without setting `userId` in `openrp_set_auth` or in tool arguments, MCP rejects the request with `{ error: true, message: "userId is required" }`.
+- Resolution: Execute `openrp_set_auth({"token": "...", "userId": "...", "refreshToken": "..."})` with valid credentials, or use the interactive `openrp-toolkit auth` command.
 
 ### B. HTTP 401: Unauthorized
 - Root Cause: Missing Authorization header, invalid token format, or expired refresh token.
@@ -104,20 +105,46 @@ Every message generated in OpenRP contains an execution trace link:
 - Root Cause: Target resource ID (`worldId`, `characterId`, `loreId`, or `behaviorId`) does not exist or was deleted.
 - Resolution: Use listing tools (`openrp_list_my_worlds`, `openrp_list_characters`, `openrp_list_lores`, `openrp_list_behaviors`) to obtain valid UUIDs.
 
-### E. HTTP 400: Bad Request
-- Root Cause: Invalid JSON payload or missing mandatory schema properties (e.g. `name`, `handle`, or invalid port configurations).
-- Resolution: Verify request arguments against schema requirements.
+### E. HTTP 400: Bad Request (`{"code": "bad_request_body"}`)
+- Root Cause 1: Mismatched User ID in URL route. Supplying the OpenRP platform account ID (`019f4c49-...` / UUIDv7) instead of the Supabase Auth UID (`0d24041d-...` / UUIDv4) in `/api/users/{userId}/...` routes.
+- Root Cause 2: Missing Character Arrays. Omitting `dialogs: []` or `greetings: []` in character creation payloads.
+- Root Cause 3: Invalid JSON or malformed ReactFlow graph payload.
+- Resolution: Ensure route URLs use the Supabase Auth UID (`0d24041d-...`), and character payloads include explicit empty arrays for `dialogs` and `greetings`.
 
-## 5. Behavior Engine Runtime Errors
+## 5. Behavior Engine Runtime Errors & Trace Anatomy
 
-### A. Error: Failed to evaluate expression ... Expected comma
+### A. Real-World Node Execution Trace Anatomy
+Every node execution returned by `GET /api/v1/behavior-executions/{id}/node-executions` contains:
+```json
+{
+  "id": "01a042e6-8441-7498-be4c-b3b4634b4228",
+  "executionId": "01a042e6-7f5a-75ea-a2da-2756ed0a2cf5",
+  "nodeId": "insertChatMessage",
+  "iteration": 0,
+  "globalIteration": 21,
+  "status": "BEHAVIOR_EXECUTION_STATUS_COMPLETED",
+  "output": {
+    "data": { "id": "...", "content": "..." }
+  },
+  "history": {
+    "chatMessage": ["01a042e6-7f64-70b3-bb30-3b66733665c7"],
+    "getChatMessage": ["01a042e6-7f65-73a9-bef9-9a2818f3669c"]
+  },
+  "startedAt": "2026-08-27T11:06:38.530Z",
+  "finishedAt": "2026-08-27T11:06:38.603Z"
+}
+```
+* **`history`**: Tracks the dependency chain of upstream node executions that supplied context to this node.
+* **`globalIteration`**: Integer indicating the chronological execution order within the DAG run.
+
+### B. Error: Failed to evaluate expression ... Expected comma
 - Cause: The expression contains a JavaScript Regular Expression literal (e.g. `/[1-9]/`).
 - Fix: Replace regex with standard string methods (e.g. `str.indexOf('1') !== -1 ? '1' : ...`).
 
-### B. Error: Expression is not a function
+### C. Error: Expression is not a function
 - Cause: Calling a string method on an `undefined` variable, typically when accessing a variable created in the same `set_variable` node before evaluation finishes.
 - Fix: Split dependent variable calculations into consecutive `storage/set_variable` nodes.
 
-### C. Sync Node Hanging Indefinitely
+### D. Sync Node Hanging Indefinitely
 - Cause: A `control_flow/sync` barrier was connected to branches originating from an `if` node. Because only one branch ever runs, the barrier waits forever for the skipped branch.
 - Fix: Use `control_flow/end_if` to merge `if` branches; reserve `sync` exclusively for merging `split` parallel branches.

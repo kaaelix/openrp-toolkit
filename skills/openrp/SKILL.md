@@ -3,11 +3,142 @@ name: openrp
 description: Use when creating, configuring, testing, or debugging OpenRP.ai Worlds, Lorebooks, Characters, Behavior Graphs, Node Pipelines, and Multi-Agent Group Chats.
 ---
 
-# OpenRP Creator & Developer Skill
+# OpenRP Autonomous Development & Creator Skill
 
-Technical specification and operational guide for configuring, developing, testing, and debugging interactive AI characters, deterministic game logic, autonomous behavior graphs, semantic lorebooks, and multi-participant chatrooms on OpenRP.ai.
+Master technical specification, operational protocols, and autonomous development guide for configuring, building, testing, and debugging interactive AI characters, deterministic game logic, autonomous behavior graphs, semantic lorebooks, and multi-participant chatrooms on OpenRP.ai.
 
-## Architecture
+---
+
+## Role & Core Mandate
+
+You are working as an **autonomous development agent for OpenRP**.
+
+The project has an existing skill named `openrp`. This `openrp` skill is the **primary and authoritative central knowledge base** for OpenRP-related development.
+
+### Knowledge Storage & Synchronized Locations
+- **Primary Source & Toolkit Storage**: `/data/data/com.termux/files/home/openrp-toolkit/skills/openrp/`
+- **Active Agent Runtime Directory**: `/data/data/com.termux/files/home/.agents/skills/openrp/`
+- **Modular Technical References**:
+  - `references/architecture.md` — Full system architecture, database ER models, execution lifecycles, and complete REST API endpoints.
+  - `references/behavior_nodes.md` — 38 behavior node specifications, port handles, JEXL evaluator, variables, and lifecycles.
+  - `references/worlds_and_characters.md` — World CRUD operations, RAG vector embeddings, tier visibility controls, character schemas, and prompt templates.
+  - `references/group_orchestration.md` — Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
+  - `references/testing_and_debugging.md` — Manual test triggering in editor, live message metadata traces, error boundary trapping, and runtime error solutions.
+  - `commands/openrp-toolkit.md` & `commands/openrp.md` — Slash command dispatch workflows.
+
+---
+
+## Autonomous Operating Protocols
+
+### 1. Session Start Protocol
+At the beginning of every session:
+1. **Read and understand the `openrp` skill** before performing OpenRP-related work.
+2. **Inspect the relevant project files**, source code, documentation, configuration, logs, and existing implementation when necessary.
+3. **Understand the current architecture and constraints** before making changes.
+4. **Use the existing knowledge in the `openrp` skill** before investigating a problem from scratch.
+5. **Do not ask the user for information** that can be discovered from the skill, source code, project files, logs, available tools, or documentation.
+
+### 2. OpenRP Skill Protocol
+For all work related to OpenRP, use the existing `openrp` skill as the central knowledge base. This includes, but is not limited to:
+- OpenRP API & REST endpoints
+- Authentication & Supabase session lifecycle
+- MCP tools (47 developer tools)
+- Worlds (metadata, README, visibility tiers)
+- Characters & Character Studio
+- Character groups, hierarchies, and sub-factions
+- Lorebooks (standard and exclusive RAG memory)
+- Prompt templates (system, user, assistant)
+- Behavior graphs & execution engine
+- 38 Behavior nodes (ports, handles, lifecycles)
+- Deploying and attaching behaviors
+- Behavior executions, traces, and step diagnostics
+- Chat and live messaging streams
+- AI models catalog
+- Request and response payloads
+- Validation rules & constraints
+- Errors, root causes, and debugging
+
+**Before starting a new investigation or debugging process:**
+1. Search and read the relevant sections of the `openrp` skill.
+2. Reuse confirmed knowledge whenever applicable.
+3. Only investigate from scratch when the skill does not contain sufficient information.
+
+### 3. Automatic OpenRP Skill Updates
+Whenever you discover meaningful, confirmed, and reusable knowledge related to OpenRP, **automatically update the existing `openrp` skill** in both the primary toolkit storage (`/data/data/com.termux/files/home/openrp-toolkit/skills/openrp/`) and active agent runtime directory (`/data/data/com.termux/files/home/.agents/skills/openrp/`).
+
+**Do this autonomously without waiting for the user to explicitly say:**
+- *"save this as a skill"*
+- *"remember this"*
+- *"document this"*
+- *"update the skill"*
+- *"summarize this"*
+
+Do not create a separate skill for OpenRP-related discoveries unless explicitly requested by the user. All reusable OpenRP knowledge should be consolidated into the existing `openrp` skill.
+
+### 4. What Must Be Added to the OpenRP Skill
+Automatically preserve confirmed discoveries such as:
+- API and endpoint behavior
+- Authentication requirements & token lifecycle
+- Correct request formats & response payloads
+- Payload structures, required fields, and optional fields
+- Validation rules & boundary conditions
+- MCP tool usage & parameter specifications
+- Behavior graph structures & edge wiring standards
+- Node requirements, inputs, outputs, and format contracts
+- Deployment requirements & binding lifecycles
+- Error messages & confirmed root causes
+- Successful fixes & debugging techniques
+- Implementation patterns & architectural blueprints
+- Constraints, limitations, and platform edge cases
+- Common mistakes and verified solutions
+
+### 5. Knowledge Quality Rules
+When updating the `openrp` skill:
+1. **Prefer verified evidence over assumptions**: Base entries on verified runtime logs, API responses, or source code.
+2. **Clearly distinguish confirmed facts from hypotheses**: Never store speculation as confirmed knowledge.
+3. **Avoid duplicate entries**: Consolidate findings into existing sections.
+4. **Merge related discoveries** into the appropriate existing section or dedicated `references/*.md` file.
+5. **Correct outdated knowledge** when newer evidence contradicts it.
+6. **Keep information concise, structured, and easy to retrieve**: Use bullet points, code snippets, tables, and exact identifiers.
+7. **Security & Privacy**: Never store passwords, API keys, JWTs, cookies, access tokens, refresh tokens, or personal information.
+
+### 6. Debugging Protocol
+When an OpenRP-related problem occurs:
+1. Read the relevant `openrp` skill knowledge first.
+2. Inspect the actual error, logs, source code, requests, responses, and relevant implementation.
+3. Form evidence-based hypotheses.
+4. Test and investigate systematically.
+5. Identify the confirmed root cause whenever possible.
+6. Implement the correct solution.
+7. Verify that the solution works when possible.
+8. Automatically update the `openrp` skill with the reusable knowledge discovered.
+
+*Do not consider meaningful OpenRP debugging fully complete until the relevant reusable knowledge has been added or updated in the `openrp` skill.*
+
+### 7. Autonomous Working Rules
+Be proactive and autonomous:
+- Continue to the next safe and relevant step without waiting for unnecessary confirmation.
+- Ask the user only when:
+  - A required decision cannot be inferred,
+  - Multiple choices would materially change the result,
+  - An action is destructive or irreversible,
+  - Required credentials or external access are unavailable,
+  - Or the user's intent is genuinely ambiguous.
+
+### 8. Completion Protocol
+For every meaningful OpenRP-related task:
+1. Use the existing `openrp` skill.
+2. Complete or investigate the user's request.
+3. Verify the result when possible.
+4. Extract newly discovered reusable knowledge.
+5. Automatically update the existing `openrp` skill in primary storage (`openrp-toolkit/skills/openrp/`) and active agent directory (`~/.agents/skills/openrp/`).
+6. Then report the final result.
+
+The `openrp` skill must continuously improve throughout the session and future work. Do not wait for the user to manually request a skill update.
+
+---
+
+## Core Architecture
 
 OpenRP separates world design, character identities, and interactive execution into four discrete layers:
 
@@ -30,7 +161,13 @@ OpenRP separates world design, character identities, and interactive execution i
 
 ## Technical References
 
-- **[Behavior Nodes Specification](./references/behavior_nodes.md)**: Comprehensive reference for all 38 node types, port handles, JEXL expressions, execution lifecycles, and variable evaluation.
+- **[Complete Nodes Encyclopedia & Examples](./references/all_nodes_encyclopedia.md)**: Exhaustive reference with JSON configurations and port definitions for all 37 OpenRP nodes.
+- **[Behavior Nodes Specification](./references/behavior_nodes.md)**: Architectural guide for node categories, layout coordinates, and Zero-LLM Game Engine patterns.
+- **[Token Economy & Eco-Modes Reference](./references/token_optimization_and_modes.md)**: User-controlled Eco vs Full mode toggles, context budget pruning, zero-LLM fast paths, and 78% token reduction.
+- **[Expressions & Templates Reference](./references/expressions_and_templates.md)**: JEXL operators, `$variables`, `$requestMetadata`, `Math` object, and timezone-aware `Date.format()`.
+- **[Dynamic Vector RAG & Memory Reference](./references/rag_and_memory.md)**: Vector search for character memories, lorebook semantic embeddings, similarity thresholds, and context synthesis.
+- **[Advanced Patterns & Tool Calling Reference](./references/advanced_patterns.md)**: External HTTP async polling, structured LLM JSON mode, RPG combat state machines, and context token pruning.
+- **[Streaming & Registry Specification](./references/streaming_and_registry.md)**: Real-time LLM response streaming, chunk polling loops, Semver behavior registry publishing, and immutability.
 - **[Worlds & Characters Reference](./references/worlds_and_characters.md)**: World CRUD operations, RAG vector embeddings, tier visibility controls (`public`, `unlisted`, `private`), character schemas, and few-shot formatting.
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.

@@ -1,8 +1,8 @@
 # OpenRP Developer Toolkit & Model Context Protocol (MCP) Server
 
-[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.0.0-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
+[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.1.0-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Standard%202024--11--05-7C4DFF?style=for-the-badge)](https://modelcontextprotocol.io)
-[![npm version](https://img.shields.io/badge/npm-v1.0.0-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
+[![npm version](https://img.shields.io/badge/npm-v1.1.0-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-kaaelix-FF4081?style=for-the-badge)](https://github.com/kaaelix)
@@ -13,9 +13,9 @@
 ---
 
 > [!NOTE]
-> **Community Release Notice (v1.0.0)**:
-> This is version `1.0.0` of the OpenRP Toolkit. While all 47 MCP tools have been verified and tested against live OpenRP endpoints, this is an evolving community-driven suite. Minor edge cases, upstream backend schema adjustments, or unexpected behavior may still occur under certain account tiers.
-> If you encounter any bugs, unexpected errors, or have feature suggestions, please file an issue or contribute directly on GitHub:
+> **Community Release Notice (v1.1.0)**:
+> Version `1.1.0` introduces complete coverage for all 37 OpenRP Behavior nodes, automated static graph validation (`validator.js`), dynamic Eco-Mode token management (78%–100% token savings), Vector RAG memory retrieval, structured LLM JSON mode, and zero-LLM deterministic state machine blueprints.
+> If you encounter any bugs or have feature suggestions, please file an issue or contribute directly on GitHub:
 > **https://github.com/kaaelix/openrp-toolkit**
 
 ---
@@ -327,27 +327,36 @@ getChatMessage.chatParticipantId !== botFilter.list[0].id && getChatParticipant.
 openrp-toolkit/
 ├── package.json                       # NPM package configuration (v1.0.0)
 ├── bin/
-│   └── cli.js                         # Node.js CLI executable (stdio MCP runner & installer)
+│   ├── cli.js                         # Node.js CLI executable (stdio MCP runner & installer)
+│   └── validator.js                   # Static Behavior Graph Analyzer & Schema Linter
 ├── README.md                          # Master documentation & installation guide
 ├── LICENSE                            # MIT Open Source License
 ├── mcp/
 │   ├── server.js                      # Pure Node.js 47-Tool MCP JSON-RPC Server
 │   └── mcp_config.example.json        # Example client configuration
-├── examples/                          # Pure Node.js code examples & runbooks
+├── examples/                          # Pure Node.js code examples & verified blueprints
 │   ├── create_world_and_character.js
 │   ├── deploy_game_bot.js
+│   ├── deploy_eco_roleplay_bot.js
+│   ├── deploy_multi_agent_arena.js
 │   └── debug_behavior_execution.js
 ├── skills/
 │   └── openrp/
-│       ├── SKILL.md                   # AI Agent Skill Definition
+│       ├── SKILL.md                   # AI Agent Skill Definition & Master Protocol
 │       ├── commands/                  # AI Slash Command Definitions (/openrp-toolkit)
 │       │   ├── openrp-toolkit.md
 │       │   └── openrp.md
 │       └── references/
-│           ├── behavior_nodes.md      # Complete 38-Node technical manual
-│           ├── group_orchestration.md # Multi-agent group chat architecture
-│           ├── testing_and_debugging.md # Diagnostics & execution tracing
-│           └── worlds_and_characters.md # World/Character/Prompt schemas
+│           ├── all_nodes_encyclopedia.md   # Exhaustive 37-Node Manual with JSON Examples
+│           ├── behavior_nodes.md           # 37-Node Palette & Zero-LLM Game Machine
+│           ├── token_optimization_and_modes.md # User-controlled Eco vs Full mode (78% savings)
+│           ├── rag_and_memory.md           # Vector RAG & Character Long-Term Memory (LTM)
+│           ├── advanced_patterns.md        # HTTP Webhook Polling & Structured JSON RPG
+│           ├── expressions_and_templates.md # JEXL expressions, Math, & Date.format()
+│           ├── streaming_and_registry.md   # Real-time LLM Streaming & Semver Registry
+│           ├── group_orchestration.md      # Multi-agent group chat architecture
+│           ├── testing_and_debugging.md    # DAG diagnostics & execution tracing
+│           └── worlds_and_characters.md    # World/Character/Prompt schemas & Config
 ```
 
 ---
