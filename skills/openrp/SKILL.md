@@ -179,6 +179,7 @@ OpenRP separates world design, character identities, and interactive execution i
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
 - **[Production Blueprints & Verified Graphs](./references/production_blueprints.md)**: 5 copy-pasteable production blueprints (Official RAG Chat, AI Image Synthesis, Zero-LLM Fast Path, Multi-Agent Party, Eco-Mode Pruning).
 - **[Canvas Layouts & Edge Styling Reference](./references/canvas_layouts_and_edge_styles.md)**: 5 visual layout modes (Snake S-Curve, Bento Modular, Diamond Fork-Join, Cyberpunk Wave, Radial Orbit) and animated color-coded ReactFlow edge wires.
+- **[OpenRP-Base Architecture & Lineage](./references/openrp_base_architecture_lineage.md)**: Dissection of the official `openrp-ai/openrp-base` repository, protobuf definitions (`ai.openrp.base.metadata`), and the evolution from V1 prompt nodes into the V2 Behavior DAG Engine.
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.
 
 ## Slash Command Direct Dispatch (`/openrp-toolkit` & `/openrp`)
