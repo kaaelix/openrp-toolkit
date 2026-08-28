@@ -416,6 +416,16 @@ TOOLS = [
             "required": ["characterId"]
         }
     },
+    {
+        "name": "openrp_list_character_groups",
+        "description": "List all Character Groups and faction hierarchies defined in a world.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"}
+            }
+        }
+    },
 
     # 5. PROMPT TEMPLATES & SYSTEM PROMPTS
     {
@@ -956,6 +966,12 @@ def handle_tool_call(name, args):
         if not u or not w or not c:
             return {"error": True, "message": "userId, worldId, and characterId are required"}
         return make_request(f"/api/users/{u}/worlds/{w}/characters/{c}", method="DELETE")
+        
+    elif name == "openrp_list_character_groups":
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not w:
+            return {"error": True, "message": "worldId is required"}
+        return make_request(f"/api/v1/worlds/{w}/character-groups")
         
     # --- PROMPTS ---
     elif name == "openrp_list_prompts":

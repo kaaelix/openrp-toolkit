@@ -4,6 +4,26 @@ This manual provides complete specifications, topology blueprints, JEXL expressi
 
 ---
 
+## 0. Disambiguation: CharacterGroup vs Group Chat
+
+In OpenRP architecture, the term **Group** refers to two fundamentally different concepts:
+
+### 1. `CharacterGroup` (World-Level Character Factions & Hierarchies)
+* **Domain**: World Design & NPC Taxonomy.
+* **REST Route**: `GET /api/v1/worlds/{worldId}/character-groups`
+* **MCP Tool**: `openrp_list_character_groups`
+* **Purpose**: Organizes characters in a World into sub-factions, guilds, or party divisions (e.g. `"all-characters"`, `"adventurers-guild"`, `"cyber-syndicate"`).
+* **Behavior Support**: Can attach shared behavior graphs (`characterBehaviors`) that cascade to characters within that group hierarchy.
+
+### 2. `Group Chat` (Runtime Multi-Agent Conversation Session)
+* **Domain**: Live Multi-Participant Messaging & State Machines.
+* **REST Route**: `GET /api/chats/{chatId}` & `POST /api/chats/{chatId}/messages`
+* **MCP Tools**: `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
+* **Purpose**: An active interactive room connecting human users (`userId !== null`) with one or more AI character bots (`userId === null`).
+* **Behavior Execution**: When a message is sent to the chatroom, OpenRP dispatches an `events/chat_message` trigger event to the behavior pipeline of each participating character bot.
+
+---
+
 ## 1. Group Chat Architecture & Data Models
 
 In OpenRP, a Group Chat represents a multi-participant session connecting multiple human users and multiple AI character bots to a single shared message stream (`chatId`).
