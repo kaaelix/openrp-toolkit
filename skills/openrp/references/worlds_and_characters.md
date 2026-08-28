@@ -43,7 +43,7 @@ The main World documentation (README) supports full GitHub Flavored Markdown up 
 {
   "updateType": "metadata",
   "data": {
-    "readme": "# ⚡ Cyber Neon Realm\n\nWelcome to the official arena!\n\n### 🕹️ Rules & Attractions:\n- Challenge the Game Master bot with coordinate moves (0-8).\n- Party roleplay with Eldrin the Mage."
+    "readme": "# Cyber Neon Realm\n\nWelcome to the official arena!\n\n### Rules & Attractions:\n- Challenge the Game Master bot with coordinate moves (0-8).\n- Party roleplay with Eldrin the Mage."
   }
 }
 ```

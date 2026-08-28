@@ -99,7 +99,7 @@ When multiple AI characters join the same chatroom, each bot's behavior graph tr
 
 ---
 
-### 🏛️ Blueprint 1: Mention-Gated Activation (Recommended)
+### Blueprint 1: Mention-Gated Activation (Recommended)
 The AI character only generates a response if its `@handle` or display name is mentioned in the incoming user message.
 
 #### Graph Layout & Topology
@@ -134,7 +134,7 @@ The AI character only generates a response if its `@handle` or display name is m
 
 ---
 
-### 🔄 Blueprint 2: Round-Robin / Turn-Taking Pattern
+### Blueprint 2: Round-Robin / Turn-Taking Pattern
 Bots take turns participating in group discussions. A bot only speaks if the last speaker was a human or a different bot.
 
 #### Graph Logic & Turn Checking:
