@@ -280,13 +280,14 @@ Column 0 (Trigger)   Column 1 (Fork/Sync)   Column 2 (Storage)   Column 3 (AI/Lo
 
 ---
 
-## 6. Node Connectivity Classification (Wajib, Opsional, Cadangan)
+## 6. Node Connectivity Classification (Mandatory, Optional, Fallback)
 
-| Kategori | Node Types | Peran / Aturan Koneksi |
+| Category | Node Types | Role / Connection Rules |
 |---|---|---|
-| **WAJIB TERSAMBUNG** *(Mandatory)* | `events/chat_message`, `storage/get_*`, `storage/set_variable`, `ai/*`, `utilities/filter`, `utilities/map`, `utilities/join`, `control_flow/split`, `control_flow/if` | **Wajib dihubungkan** dari root trigger sampai downstream. Jika terputus, node tidak akan pernah dieksekusi oleh runtime engine. |
-| **TIDAK WAJIB / OPSIONAL** *(Optional)* | `utilities/comment`, Terminal `storage/insert_chat_message`, Terminal `storage/update_typing_status` | **Boleh tidak memiliki output**. `utilities/comment` bahkan tidak memiliki input/output handle karena murni catatan visual canvas. |
-| **CADANGAN / FALLBACK** *(Error Handlers)* | `storage/broadcast_failed_chat_message`, Fallback `ai/llm` pada `try.error`, Fallback `control_flow/wait` pada `if.false` | **Dihubungkan ke port darurat/alternatif** (`try.error` atau `if.false`) untuk memastikan bot tetap merespon saat terjadi error atau kondisi tidak terpenuhi. |
+| **MANDATORY** *(Required)* | `events/chat_message`, `storage/get_*`, `storage/set_variable`, `ai/*`, `utilities/filter`, `utilities/map`, `utilities/join`, `control_flow/split`, `control_flow/if` | **Must be connected** from root trigger downstream. If disconnected, the node will never be executed by the runtime engine. |
+| **OPTIONAL** *(Leaves / Annotation)* | `utilities/comment`, Terminal `storage/insert_chat_message`, Terminal `storage/update_typing_status` | **May have no outgoing connections**. `utilities/comment` does not even require input/output handles as it serves purely as a canvas visual note. |
+| **FALLBACK / ERROR HANDLERS** | `storage/broadcast_failed_chat_message`, Fallback `ai/llm` on `try.error`, Fallback `control_flow/wait` on `if.false` | **Connected to contingency/alternative ports** (`try.error` or `if.false`) to guarantee the bot responds gracefully during errors or unsatisfied conditions. |
+
 
 
 
