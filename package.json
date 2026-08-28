@@ -10,6 +10,9 @@
   "scripts": {
     "start": "node ./bin/cli.js",
     "serve": "node ./bin/cli.js serve",
+    "sync": "node ./bin/cli.js sync",
+    "update": "node ./bin/cli.js update",
+    "postinstall": "node ./bin/cli.js sync --silent || true",
     "install-skill": "node ./bin/cli.js install",
     "doctor": "node ./bin/cli.js doctor",
     "auth": "node ./bin/cli.js auth",

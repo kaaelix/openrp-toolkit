@@ -37,6 +37,8 @@ function showHelp() {
   console.log('  openrp-toolkit <command> [options]\n');
   console.log('Commands:');
   console.log('  add, install           Interactive installer for AI assistants & CLIs');
+  console.log('  sync                   Synchronize skills and MCP configs to detected platforms');
+  console.log('  update, upgrade        Auto-update toolkit via Git/npm and re-sync all skills');
   console.log('  list                   List all 47 MCP tools, skills, and references');
   console.log('  auth                   Interactive setup for OpenRP authentication');
   console.log('  doctor                 Run diagnostics on Node runtime, config, and OpenRP API');
@@ -609,6 +611,100 @@ async function runDoctor() {
   console.log('└───────────────────────────────────────────────────────────────┘\n');
 }
 
+function runSync(silent = false) {
+  if (!silent) printBanner();
+  if (!silent) console.log('◇  Synchronizing OpenRP Skills and MCP server configs...\n');
+
+  const detectedList = PLATFORMS.filter(p => p.detect());
+  let syncedCount = 0;
+
+  for (const plat of detectedList) {
+    if (plat.installSkill) {
+      try {
+        const res = plat.installSkill();
+        const shortDest = res.dest.replace(os.homedir(), '~');
+        if (!silent) console.log(`   ✓ Synced ${res.count} skill files -> ${plat.name} (${shortDest})`);
+        syncedCount++;
+      } catch (err) {
+        if (!silent) console.log(`   ✗ Failed to sync skill to ${plat.name}: ${err.message}`);
+      }
+    }
+    if (plat.installMcp) {
+      try {
+        const res = plat.installMcp();
+        const shortDest = res.dest ? res.dest.replace(os.homedir(), '~') : res.detail;
+        if (!silent) console.log(`   ✓ Synced MCP config -> ${plat.name} (${shortDest})`);
+      } catch (err) {}
+    }
+  }
+
+  if (!silent) {
+    console.log(`\n[SUCCESS] Successfully synchronized OpenRP skills across ${syncedCount} detected platform(s).\n`);
+  }
+}
+
+async function checkRemoteVersion() {
+  return new Promise((resolve) => {
+    https.get('https://registry.npmjs.org/openrp-toolkit/latest', { timeout: 3000 }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          resolve(json.version || null);
+        } catch {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+async function runUpdate() {
+  printBanner();
+  console.log('◇  Checking for OpenRP Toolkit updates on npm & GitHub...\n');
+
+  const localPkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8'));
+  const currentVersion = localPkg.version;
+  console.log(`   Current Local Version: v${currentVersion}`);
+
+  const remoteVersion = await checkRemoteVersion();
+  if (remoteVersion) {
+    console.log(`   Latest npm Version:   v${remoteVersion}`);
+  } else {
+    console.log(`   (Could not reach npm registry, checking local git repository...)`);
+  }
+
+  // If in git repo, pull latest git changes
+  const gitDir = path.join(PACKAGE_ROOT, '.git');
+  if (fs.existsSync(gitDir)) {
+    console.log('\n◇  Updating via Git Repository (git pull)...');
+    try {
+      execSync('git pull origin main', { cwd: PACKAGE_ROOT, stdio: 'inherit' });
+      console.log('   ✓ Git repository updated to latest commit.');
+    } catch (err) {
+      console.log(`   ✗ Git pull skipped: ${err.message}`);
+    }
+  } else {
+    // Global npm update
+    console.log('\n◇  Updating via npm (npm install -g openrp-toolkit@latest)...');
+    try {
+      execSync('npm install -g openrp-toolkit@latest', { stdio: 'inherit' });
+      console.log('   ✓ npm package updated to latest release.');
+    } catch (err) {
+      console.log(`   ✗ npm update failed: ${err.message}`);
+    }
+  }
+
+  // Auto-sync skills to active platforms
+  console.log('\n◇  Synchronizing updated skill files to all detected agent platforms...');
+  runSync(false);
+
+  console.log('┌───────────────────────────────────────────────────────────────┐');
+  console.log('│ [SUCCESS] OpenRP Toolkit & Skills are up to date!             │');
+  console.log('└───────────────────────────────────────────────────────────────┘\n');
+}
+
 // Route commands
 switch (command) {
   case 'serve':
@@ -617,6 +713,13 @@ switch (command) {
   case 'add':
   case 'install':
     runInstall();
+    break;
+  case 'sync':
+    runSync(args.includes('--silent'));
+    break;
+  case 'update':
+  case 'upgrade':
+    runUpdate();
     break;
   case 'list':
     runList();
@@ -642,3 +745,4 @@ switch (command) {
     }
     break;
 }
+

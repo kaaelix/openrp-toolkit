@@ -897,11 +897,68 @@ const TOOLS = [
       },
       required: ['path']
     }
+  },
+  {
+    name: 'openrp_sync_skills',
+    description: 'Auto-synchronize latest OpenRP skill definitions and reference guides to active AI agent directories (~/.agents/skills/openrp, Claude, Codex, Cursor, Windsurf).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        targetDir: { type: 'string', description: 'Optional custom target skill directory' }
+      }
+    }
   }
 ];
 
+// Helper to copy directory recursively
+function copyDirSync(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  let count = 0;
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      count += copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+      count++;
+    }
+  }
+  return count;
+}
+
 // --- TOOL DISPATCHER & HANDLERS ---
 async function handleToolCall(name, args = {}) {
+  // AUTO-SYNC SKILLS TOOL
+  if (name === 'openrp_sync_skills') {
+    const skillsSource = path.resolve(__dirname, '..', 'skills', 'openrp');
+    const targetDirs = args.targetDir
+      ? [args.targetDir]
+      : [
+          path.join(os.homedir(), '.agents', 'skills', 'openrp'),
+          path.join(os.homedir(), '.claude', 'skills', 'openrp'),
+          path.join(os.homedir(), '.codex', 'skills', 'openrp')
+        ];
+
+    const results = [];
+    for (const target of targetDirs) {
+      try {
+        const count = copyDirSync(skillsSource, target);
+        results.push({ destination: target, filesCopied: count, status: 'synced' });
+      } catch (err) {
+        results.push({ destination: target, error: err.message, status: 'failed' });
+      }
+    }
+
+    return {
+      success: true,
+      message: 'OpenRP Skills synchronized successfully',
+      source: skillsSource,
+      syncedLocations: results
+    };
+  }
+
   // 1. AUTH & PROFILE
   if (name === 'openrp_set_auth') {
     saveAuth(args);
