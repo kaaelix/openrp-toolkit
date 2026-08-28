@@ -128,10 +128,10 @@ Every message generated in OpenRP contains an execution trace link:
 - Resolution: Use listing tools (`openrp_list_my_worlds`, `openrp_list_characters`, `openrp_list_lores`, `openrp_list_behaviors`) to obtain valid UUIDs.
 
 ### E. HTTP 400: Bad Request (`{"code": "bad_request_body"}`)
-- Root Cause 1: Mismatched User ID in URL route. Supplying the OpenRP platform account ID (`019f4c49-...` / UUIDv7) instead of the Supabase Auth UID (`0d24041d-...` / UUIDv4) in `/api/users/{userId}/...` routes.
+- Root Cause 1: Mismatched User ID in URL route. Supplying the OpenRP platform account ID (`<user-account-uuid-v7>`) instead of the Supabase Auth UID (`<user-auth-uuid-v4>`) in `/api/users/{userId}/...` routes.
 - Root Cause 2: Missing Character Arrays. Omitting `dialogs: []` or `greetings: []` in character creation payloads.
 - Root Cause 3: Invalid JSON or malformed ReactFlow graph payload.
-- Resolution: Ensure route URLs use the Supabase Auth UID (`0d24041d-...`), and character payloads include explicit empty arrays for `dialogs` and `greetings`.
+- Resolution: Ensure route URLs use the Supabase Auth UID (or resolve dynamically via `/api/users/me`), and character payloads include explicit empty arrays for `dialogs` and `greetings`.
 
 ## 5. Behavior Engine Runtime Traces: COMPLETED vs FAILED
 

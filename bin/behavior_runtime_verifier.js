@@ -20,22 +20,34 @@ const os = require('os');
 const https = require('https');
 const { validateBehaviorGraph } = require('./validator');
 
-const AUTH_USER_ID = "0d24041d-23b1-465a-9f37-110c0c0729f1";
-const WORLD_ID = "01a0467b-9fcc-746c-8f36-2c1ec0b46516";
-const AURELIA_ID = "01a0467c-2c62-7654-a4e9-3917119f29f3";
-const CHAT_ID = "01a046b4-2566-74d3-971b-9a46e7c8a192";
-const PARTICIPANT_ID = "01a046b4-2585-7389-9fef-1f92104fcfa4";
+// Parse CLI arguments
+const args = process.argv.slice(2);
+let payloadFile = null;
+let cliUserId = null;
+let cliWorldId = null;
+let cliCharacterId = null;
+let cliChatId = null;
+let cliMessage = "Archon, activate combat protocol and execute turn action!";
 
-let token = process.env.OPENRP_JWT || process.env.SUPABASE_ACCESS_TOKEN;
-if (!token) {
-  try {
-    const authPath = path.join(os.homedir(), '.openrp_mcp_auth.json');
-    if (fs.existsSync(authPath)) {
-      const auth = JSON.parse(fs.readFileSync(authPath, 'utf8'));
-      token = auth.token;
-    }
-  } catch (e) {}
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--user' && args[i + 1]) cliUserId = args[++i];
+  else if (args[i] === '--world' && args[i + 1]) cliWorldId = args[++i];
+  else if (args[i] === '--character' && args[i + 1]) cliCharacterId = args[++i];
+  else if (args[i] === '--chat' && args[i + 1]) cliChatId = args[++i];
+  else if (args[i] === '--message' && args[i + 1]) cliMessage = args[++i];
+  else if (!args[i].startsWith('--') && !payloadFile) payloadFile = args[i];
 }
+
+let token = process.env.OPENRP_JWT || process.env.SUPABASE_ACCESS_TOKEN || process.env.OPENRP_TOKEN;
+let savedAuth = {};
+
+try {
+  const authPath = path.join(os.homedir(), '.openrp_mcp_auth.json');
+  if (fs.existsSync(authPath)) {
+    savedAuth = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+    if (!token) token = savedAuth.token;
+  }
+} catch (e) {}
 
 function apiRequest(apiPath, method = 'GET', body = null, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
@@ -48,7 +60,7 @@ function apiRequest(apiPath, method = 'GET', body = null, extraHeaders = {}) {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+        'User-Agent': 'OpenRP-Runtime-Verifier/1.1.5 (Dynamic)',
         ...extraHeaders
       }
     }, (res) => {
@@ -72,41 +84,94 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function verifyBehavior(payloadFilePath) {
+async function verifyBehavior(targetPayloadPath) {
   console.log('====================================================');
-  console.log('🚀 Starting OpenRP Automated Behavior Runtime Verifier');
+  console.log('🚀 Starting OpenRP Dynamic Behavior Runtime Verifier');
   console.log('====================================================');
 
-  const raw = fs.readFileSync(path.resolve(process.cwd(), payloadFilePath), 'utf8');
+  if (!token) {
+    console.error('❌ Error: No authentication token found. Please set OPENRP_JWT or run `openrp auth`.');
+    process.exit(1);
+  }
+
+  // 1. Resolve Current Authenticated User Dynamically
+  console.log('\n[Step 1/6] Resolving Authenticated User ID...');
+  let userId = cliUserId || savedAuth.userId;
+  if (!userId) {
+    const meRes = await apiRequest('/api/users/me');
+    userId = meRes.data?.id;
+    if (!userId) {
+      console.error('❌ Failed to resolve authenticated user from /api/users/me:', JSON.stringify(meRes, null, 2));
+      process.exit(1);
+    }
+  }
+  console.log(`✅ Authenticated User: ${userId}`);
+
+  // 2. Pre-Flight Static Validation
+  console.log('\n[Step 2/6] Running Pre-Flight Static Analysis...');
+  if (!targetPayloadPath) {
+    console.error('❌ Error: Please specify a behavior payload file (e.g. `node behavior_runtime_verifier.js my_behavior.json`).');
+    process.exit(1);
+  }
+
+  const raw = fs.readFileSync(path.resolve(process.cwd(), targetPayloadPath), 'utf8');
   const payload = JSON.parse(raw);
 
-  // 1. Static Validation
-  console.log('\n[Step 1/5] Running Pre-Flight Static Analysis...');
   const validation = validateBehaviorGraph(payload.graph);
   if (validation.errors.length > 0) {
-    console.error('❌ Static validation failed:', validation.errors);
+    console.error('❌ Static validation failed with errors:', validation.errors);
     process.exit(1);
   }
   console.log('✅ Pre-flight static validation PASSED (0 Errors).');
 
-  // 2. Deploy or In-place Update Behavior
-  console.log('\n[Step 2/5] Deploying/Updating Behavior DAG on OpenRP...');
+  // 3. Dynamically Discover or Resolve Target World & Character
+  console.log('\n[Step 3/6] Discovering Target World and Character...');
+  let worldId = cliWorldId || savedAuth.worldId;
+  if (!worldId) {
+    const worldsRes = await apiRequest(`/api/users/${userId}/worlds?limit=5`);
+    const worlds = worldsRes.data?.data || (Array.isArray(worldsRes.data) ? worldsRes.data : []);
+    if (worlds.length === 0) {
+      console.error('❌ No worlds found for this user account. Please create a world first.');
+      process.exit(1);
+    }
+    worldId = worlds[0].id;
+    console.log(`ℹ️ Auto-selected World: "${worlds[0].name}" (ID: ${worldId})`);
+  } else {
+    console.log(`✅ Target World ID: ${worldId}`);
+  }
+
+  let characterId = cliCharacterId || savedAuth.characterId;
+  if (!characterId) {
+    const charsRes = await apiRequest(`/api/users/${userId}/worlds/${worldId}/characters?limit=5`);
+    const chars = charsRes.data?.data || (Array.isArray(charsRes.data) ? charsRes.data : []);
+    if (chars.length === 0) {
+      console.error('❌ No characters found in this world. Please create a character first.');
+      process.exit(1);
+    }
+    characterId = chars[0].id;
+    console.log(`ℹ️ Auto-selected Character: "${chars[0].name}" (ID: ${characterId})`);
+  } else {
+    console.log(`✅ Target Character ID: ${characterId}`);
+  }
+
+  // 4. Deploy or In-place Update Behavior DAG
+  console.log('\n[Step 4/6] Deploying/Updating Behavior DAG on OpenRP...');
   let behaviorId = null;
-  const listRes = await apiRequest(`/api/users/${AUTH_USER_ID}/worlds/${WORLD_ID}/behaviors`);
+  const listRes = await apiRequest(`/api/users/${userId}/worlds/${worldId}/behaviors`);
   const bList = listRes.data?.data || (Array.isArray(listRes.data) ? listRes.data : []);
   const existing = bList.find(b => b.handle === payload.handle || b.name === payload.name);
 
   if (existing) {
     behaviorId = existing.id;
     console.log(`ℹ️ Found existing behavior "${payload.name}" (ID: ${behaviorId}). Updating in-place...`);
-    const updateRes = await apiRequest(`/api/users/${AUTH_USER_ID}/worlds/${WORLD_ID}/behaviors/${behaviorId}`, 'PUT', payload);
+    const updateRes = await apiRequest(`/api/users/${userId}/worlds/${worldId}/behaviors/${behaviorId}`, 'PUT', payload);
     if (updateRes.error) {
       console.error('❌ Update failed:', JSON.stringify(updateRes, null, 2));
       process.exit(1);
     }
     console.log(`✅ Behavior updated successfully! ID: ${behaviorId}`);
   } else {
-    const deployRes = await apiRequest(`/api/users/${AUTH_USER_ID}/worlds/${WORLD_ID}/behaviors`, 'POST', payload);
+    const deployRes = await apiRequest(`/api/users/${userId}/worlds/${worldId}/behaviors`, 'POST', payload);
     behaviorId = deployRes.data?.id;
     if (!behaviorId) {
       console.error('❌ Deployment failed:', JSON.stringify(deployRes, null, 2));
@@ -115,42 +180,69 @@ async function verifyBehavior(payloadFilePath) {
     console.log(`✅ Behavior created successfully! ID: ${behaviorId}`);
   }
 
-  // 3. Attach to Character
-  console.log(`\n[Step 3/5] Ensuring Behavior is Attached to Character (${AURELIA_ID})...`);
-  const charBehaviors = await apiRequest(`/api/v1/characters/${AURELIA_ID}/behaviors`);
+  // Attach to Character
+  console.log(`\n🔗 Ensuring Behavior is Attached to Character (${characterId})...`);
+  const charBehaviors = await apiRequest(`/api/v1/characters/${characterId}/behaviors`);
   const attachedItems = charBehaviors.data?.data || [];
   const alreadyAttached = attachedItems.find(item => item.behaviorId === behaviorId);
 
   if (!alreadyAttached) {
-    // Detach old ones
     for (const item of attachedItems) {
       if (item.id) await apiRequest(`/api/v1/character-behaviors/${item.id}`, 'DELETE');
     }
-    const attachRes = await apiRequest(`/api/v1/characters/${AURELIA_ID}/behaviors`, 'POST', {
+    const attachRes = await apiRequest(`/api/v1/characters/${characterId}/behaviors`, 'POST', {
       behaviorId,
       behaviorRegistryTagId: null
     });
     console.log(`✅ Behavior attached! Attachment ID: ${attachRes.data?.id}`);
   } else {
-    console.log(`✅ Behavior is already cleanly attached (Attachment ID: ${alreadyAttached.id}).`);
+    console.log(`✅ Behavior is already cleanly attached.`);
   }
 
-  // 4. Send Action Message
-  console.log(`\n[Step 4/5] Sending Action Message to Chat (${CHAT_ID})...`);
-  const sendRes = await apiRequest(`/api/chats/${CHAT_ID}/messages`, 'POST', {
-    content: "Archon Aurelia, aktifkan protokol tempur kosmik dan lancarkan tembakan tombak bintang ke arah retakan bayangan!",
-    participantId: PARTICIPANT_ID
+  // 5. Discover or Create Chat Session & Resolve Participants
+  console.log('\n[Step 5/6] Resolving Active Chat Session & Participants...');
+  let chatId = cliChatId || savedAuth.chatId;
+  let participantId = null;
+
+  if (!chatId) {
+    const chatsRes = await apiRequest('/api/chats');
+    const chatList = chatsRes.data?.chats || (Array.isArray(chatsRes.data) ? chatsRes.data : []);
+    if (chatList.length > 0) {
+      chatId = chatList[0].id;
+    } else {
+      const newChat = await apiRequest('/api/chats', 'POST', { character_id: characterId, tentative: false });
+      chatId = newChat.data?.id;
+    }
+  }
+
+  if (!chatId) {
+    console.error('❌ Failed to resolve or create a chat session.');
+    process.exit(1);
+  }
+  console.log(`✅ Target Chat Session ID: ${chatId}`);
+
+  // Fetch participants of the chat to dynamically find the human participant
+  const chatDetails = await apiRequest(`/api/chats/${chatId}?expand=participants`);
+  const participants = chatDetails.data?.participants?.data || [];
+  const userPart = participants.find(p => p.userId !== null) || participants[0];
+  participantId = userPart?.id;
+
+  // Send Action Message
+  console.log(`\n💬 Sending Player Action Message into Chatroom...`);
+  const sendRes = await apiRequest(`/api/chats/${chatId}/messages`, 'POST', {
+    content: cliMessage,
+    participantId: participantId
   });
   const sentMsgId = sendRes.data?.id;
-  console.log(`✅ Test message sent! Message ID: ${sentMsgId}`);
+  console.log(`✅ Message sent! ID: ${sentMsgId}`);
 
-  // 5. Trigger Direct Editor Debug Execution Runner
-  console.log(`\n[Step 5/5] Triggering Direct Editor Debug Execution Runner...`);
+  // 6. Trigger Direct Editor Debug Execution Runner
+  console.log(`\n[Step 6/6] Triggering Execution Runner (POST /api/v1/behaviors/${behaviorId}/executions)...`);
   const execTriggerPayload = {
     triggerInput: {
       trigger: "events/chat_message",
       input: {
-        chatId: CHAT_ID,
+        chatId: chatId,
         messageId: sentMsgId,
         config: {},
         modelSettings: {
@@ -172,7 +264,7 @@ async function verifyBehavior(payloadFilePath) {
     console.error('❌ Failed to trigger behavior execution:', JSON.stringify(triggerRes, null, 2));
     process.exit(1);
   }
-  console.log(`⚡ Execution triggered successfully! Execution ID: ${executionId}`);
+  console.log(`⚡ Execution runner triggered! ID: ${executionId}`);
 
   // Polling execution status
   console.log('\n--- Polling Execution Status ---');
@@ -202,7 +294,7 @@ async function verifyBehavior(payloadFilePath) {
         console.log(`  [${idx + 1}] ${n.nodeId} (${n.status})`);
       });
 
-      process.exit(0);
+      return { success: true, executionId, behaviorId };
     }
 
     if (ex.status === 'BEHAVIOR_EXECUTION_STATUS_FAILED') {
@@ -229,11 +321,12 @@ async function verifyBehavior(payloadFilePath) {
 }
 
 if (require.main === module) {
-  const fileArg = process.argv[2] || 'omega_payload.json';
-  verifyBehavior(fileArg).catch(err => {
+  const target = payloadFile || 'skills/openrp/references/official_image_rpg_behavior.json';
+  verifyBehavior(target).catch(err => {
     console.error('Fatal Error:', err);
     process.exit(1);
   });
 }
 
 module.exports = { verifyBehavior };
+

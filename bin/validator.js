@@ -166,7 +166,9 @@ function validateBehaviorGraph(graph) {
       if (!obj || typeof obj !== 'object') return;
       for (const [k, val] of Object.entries(obj)) {
         if (k === '$expression' && typeof val === 'string') {
-          if (/\/[^\/\n]+\/[gimsuy]*/.test(val) && !val.includes('http://') && !val.includes('https://')) {
+          // Check for actual regex literals (e.g. /pattern/.test(x) or match(/pattern/))
+          const strippedStrings = val.replace(/'[^']*'/g, "''").replace(/"[^"]*"/g, '""');
+          if (/(?:^|[=(,]\s*)\/[^\/\n]+\/[gimsuy]*/.test(strippedStrings) && !strippedStrings.includes('http://') && !strippedStrings.includes('https://')) {
             issues.errors.push(`Node "${node.id}" expression contains illegal regex literal in "${currentPath}": ${val}. JEXL parser will throw a syntax error. Use .indexOf() instead.`);
           }
         } else if (typeof val === 'object') {

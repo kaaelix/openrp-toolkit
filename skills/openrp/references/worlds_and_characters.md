@@ -5,11 +5,11 @@
 > [!IMPORTANT]
 > **OpenRP has two distinct user IDs**. Using the wrong ID in route paths or payload properties will result in `HTTP 400 bad_request_body` or `HTTP 403 forbidden`.
 >
-> 1. **Supabase Auth UID (`auth.uid()` / UUIDv4, e.g., `0d24041d-23b1-465a-9f37-110c0c0729f1`)**:
->    - Found in the JWT payload under `sub` / `user_id`.
+> 1. **Supabase Auth UID (`auth.uid()` / UUIDv4, e.g., `<user-auth-uuid-v4>`)**:
+>    - Found in the JWT payload under `sub` / `user_id` or resolved via `/api/users/me`.
 >    - **MUST be used in all user-scoped REST route URLs**: `/api/users/{authUid}/worlds`, `/api/users/{authUid}/worlds/{worldId}/...`
 >    - **MUST be used as the `owner` field value** in world creation payloads.
-> 2. **OpenRP Platform Account ID (UUIDv7, e.g., `019f4c49-0ec7-7374-8fab-d7e8add428bc`)**:
+> 2. **OpenRP Platform Account ID (UUIDv7, e.g., `<user-account-uuid-v7>`)**:
 >    - Returned in `openrp_get_me.data.id`.
 >    - Represents public profiles, follower lists, and chat participant identifiers.
 
@@ -22,7 +22,7 @@ A World in OpenRP represents an overarching universe, lore repository, and vecto
 ### Complete World Creation Payload (`POST /api/users/{authUid}/worlds`)
 ```json
 {
-  "owner": "0d24041d-23b1-465a-9f37-110c0c0729f1",
+  "owner": "<user-auth-uuid-v4>",
   "name": "Neon Arcadia 2099",
   "handle": "neon-arcadia-2099",
   "description": "An underground cyberpunk arcade where humans and synthetic intelligences compete.",
