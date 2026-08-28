@@ -1,42 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * OpenRP Visual Graph Layout & Edge Styler
+ * OpenRP Visual Graph Spatial Layout Generator
  * 
- * Transforms behavior graphs into beautiful visual layouts with custom edge aesthetics:
- * - Styles: 'snake' (S-Curve), 'diamond' (Hierarchical Fork-Join), 'bento' (Modular Clusters), 'radial' (Orbit), 'cyberpunk' (Wave Grid)
- * - Edge Customization: Animated pulsing wires, color-coded branches (Success, Error, Parallel, Data).
+ * Arranges node (x, y) coordinates into clean, non-linear geometric layouts:
+ * - 'snake': S-Curve / Zigzag grid (4 nodes per row, compact & readable)
+ * - 'diamond': Symmetrical fork-join for parallel branches (split/sync)
+ * - 'bento': Functional category clusters (Ingestion, RAG, Inference, Delivery)
+ * - 'wave': Alternating diagonal sine-wave layout
  */
-
-const STYLES = {
-  CONTROL: { stroke: '#3b82f6', strokeWidth: 2 },        // Blue
-  SUCCESS: { stroke: '#10b981', strokeWidth: 2 },        // Green
-  ERROR: { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '4,4' }, // Red Dashed
-  PARALLEL: { stroke: '#8b5cf6', strokeWidth: 2 },       // Purple
-  RAG: { stroke: '#f59e0b', strokeWidth: 2 }             // Amber
-};
-
-function styleEdges(edges, animated = true) {
-  return edges.map(edge => {
-    let edgeStyle = { ...STYLES.CONTROL };
-    let edgeType = 'smoothstep';
-
-    if (edge.sourceHandle === 'true' || edge.sourceHandle === 'success') {
-      edgeStyle = { ...STYLES.SUCCESS };
-    } else if (edge.sourceHandle === 'false' || edge.sourceHandle === 'error') {
-      edgeStyle = { ...STYLES.ERROR };
-    } else if (edge.sourceHandle && (edge.sourceHandle.startsWith('out') || edge.targetHandle?.startsWith('in'))) {
-      edgeStyle = { ...STYLES.PARALLEL };
-    }
-
-    return {
-      ...edge,
-      type: edgeType,
-      animated: animated,
-      style: edgeStyle
-    };
-  });
-}
 
 function applySnakeLayout(nodes, columns = 4, nodeWidth = 240, rowHeight = 160) {
   return nodes.map((node, index) => {
@@ -56,13 +28,11 @@ function applySnakeLayout(nodes, columns = 4, nodeWidth = 240, rowHeight = 160) 
 }
 
 function applyBentoLayout(nodes) {
-  // Groups nodes by category
   const clusters = {
     events: { x: 50, y: 100 },
     storage: { x: 350, y: 100 },
-    logic: { x: 650, y: 100 },
-    ai: { x: 650, y: 300 },
-    delivery: { x: 950, y: 300 }
+    ai: { x: 650, y: 250 },
+    delivery: { x: 950, y: 250 }
   };
 
   return nodes.map((node, idx) => {
@@ -91,16 +61,15 @@ function applyBentoLayout(nodes) {
   });
 }
 
-function applyDiamondLayout(nodes, nodeWidth = 260, nodeHeight = 150) {
-  // Symmetrical fork-join tree
+function applyDiamondLayout(nodes, nodeWidth = 260) {
   return nodes.map((node, index) => {
     let x = index * nodeWidth;
     let y = 300;
 
     if (node.id.toLowerCase().includes('bot') || node.id.toLowerCase().includes('error') || index % 2 === 1) {
-      y = 150;
+      y = 160;
     } else if (node.id.toLowerCase().includes('user') || node.id.toLowerCase().includes('lore')) {
-      y = 450;
+      y = 440;
     }
 
     return {
@@ -121,9 +90,15 @@ function applyWaveLayout(nodes, nodeWidth = 220, amplitude = 120, frequency = 0.
   });
 }
 
-function styleGraph(graph, layoutType = 'snake', animated = true) {
+function layoutGraph(graph, layoutType = 'snake') {
   let nodes = graph.nodes || [];
-  let edges = graph.edges || [];
+  const edges = (graph.edges || []).map(edge => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    sourceHandle: edge.sourceHandle,
+    targetHandle: edge.targetHandle
+  }));
 
   switch (layoutType.toLowerCase()) {
     case 'snake':
@@ -146,8 +121,6 @@ function styleGraph(graph, layoutType = 'snake', animated = true) {
       nodes = applySnakeLayout(nodes);
   }
 
-  edges = styleEdges(edges, animated);
-
   return {
     ...graph,
     nodes,
@@ -156,17 +129,9 @@ function styleGraph(graph, layoutType = 'snake', animated = true) {
 }
 
 module.exports = {
-  styleGraph,
-  styleEdges,
+  layoutGraph,
   applySnakeLayout,
   applyBentoLayout,
   applyDiamondLayout,
-  applyWaveLayout,
-  STYLES
+  applyWaveLayout
 };
-
-if (require.main === module) {
-  console.log('🎨 OpenRP Visual Graph Layout & Edge Styler module loaded.');
-  console.log('Supported Layouts: snake, bento, diamond, wave.');
-  console.log('Supported Edge Styles: Animated smoothstep, Color-coded (Blue/Green/Red/Purple/Amber).');
-}

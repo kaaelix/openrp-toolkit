@@ -1,86 +1,73 @@
-# Canvas Layouts & Edge Styling Reference
+# Visual Graph Layouts & Spatial Geometries Reference
 
-This guide provides options for customizing OpenRP Behavior Graph **visual geometry layouts** and **ReactFlow edge wire styling** so developers and users can tailor graphs to their aesthetic preferences instead of plain linear lines.
-
----
-
-## 1. Five Visual Geometry Layout Styles
-
-Developers and users can choose from 5 visual layout modes depending on graph complexity:
-
-```
-1. SNAKE / S-CURVE (Compact Grid)
-[Node 1] ──> [Node 2] ──> [Node 3] ──> [Node 4]
-                                          │
-[Node 8] <── [Node 7] <── [Node 6] <── [Node 5]
-   │
-[Node 9] ──> [Node 10] ──> [Node 11]
-
-2. DIAMOND / HIERARCHICAL FORK-JOIN
-                   ┌──> [Branch A (Upper)] ──┐
-[Trigger] ──> [Split]                        ├──> [Sync] ──> [LLM]
-                   └──> [Branch B (Lower)] ──┘
-
-3. BENTO BOX / MODULAR CLUSTERS
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│ Ingestion Hub   │  │ Semantic RAG    │  │ LLM Engine      │
-│ [Msg] ──> [Chat]│  │ [Embed]──>[Lore]│  │ [LLM]──>[Stream]│
-└─────────────────┘  └─────────────────┘  └─────────────────┘
-
-4. CYBERPUNK WAVE (Alternating Sine Wave)
-[Node 1]          [Node 3]          [Node 5]
-    ╲                ╱  ╲                ╱
-     ╲              ╱    ╲              ╱
-      [Node 2] ────┘      [Node 4] ────┘
-
-5. RADIAL / GALAXY ORBIT
-               [Character A]
-                     ▲
-                     │
-    [Lore RAG] ── [Master Hub] ── [Image Gen]
-                     │
-                     ▼
-               [Character B]
-```
+This reference documents how to arrange OpenRP Behavior Graph nodes on the visual 2D canvas using custom **spatial coordinate geometries (`position: { x, y }`)** to prevent long linear graphs and make complex workflows clean and readable.
 
 ---
 
-## 2. ReactFlow Edge Aesthetics & Animated Data Wires
+## 1. What OpenRP Supports on the Canvas
 
-OpenRP edges support ReactFlow custom styling properties:
-
-```json
-{
-  "id": "xy-edge__generateReplynext-insertMessageprevious",
-  "source": "generateReply",
-  "sourceHandle": "next",
-  "target": "insertMessage",
-  "targetHandle": "previous",
-  "type": "smoothstep",
-  "animated": true,
-  "style": {
-    "stroke": "#3b82f6",
-    "strokeWidth": 2
-  }
-}
-```
-
-### Color Coding Conventions:
-* 🔵 **Primary Control Flow (`#3b82f6`)**: Standard execution flow (`next` $\to$ `previous`).
-* 🟢 **Success Branches (`#10b981`)**: True/Success paths (`true` on `if`, `success` on `try`).
-* 🔴 **Error / Fallback Branches (`#ef4444`, dashed)**: False/Error paths (`error` on `try`, `false` on `if`).
-* 🟣 **Parallel Branches (`#8b5cf6`)**: Multithreaded execution (`out1`, `out2` on `split` $\to$ `in1`, `in2` on `sync`).
-* 🟡 **Vector RAG Wires (`#f59e0b`)**: Context & semantic embeddings transport.
+1. **Node Spatial Positioning (`position: { x: number, y: number }`)**:
+   * **100% Supported**: Every node has `position.x` and `position.y` stored directly in the behavior graph JSON.
+   * OpenRP's web editor places each node on the 2D canvas exactly at these coordinates.
+   * By customizing coordinates, we can arrange graphs in **Snake / S-Curve Grids**, **Diamond Fork-Joins**, **Bento Clusters**, or **Sine Waves**.
+2. **ReactFlow Edge Wires**:
+   * OpenRP uses standard ReactFlow Bezier curved lines to connect ports based on `source`, `target`, `sourceHandle`, and `targetHandle`.
+   * Custom CSS stroke colors or external animation flags are managed by OpenRP's global canvas theme.
 
 ---
 
-## 3. Automated Layout Utility
+## 2. Four Proven Visual Layout Geometries
 
-Use the built-in layout styler tool in `openrp-toolkit`:
+### A. S-Curve / Snake Grid Layout (Recommended for 10+ Nodes)
+Instead of stretching 20 nodes 4000px horizontally or 3000px vertically, nodes wrap in compact 4-column zigzag rows:
+
+```
+Row 1: [Node 1] ──> [Node 2] ──> [Node 3] ──> [Node 4]
+                                                 │
+Row 2: [Node 8] <── [Node 7] <── [Node 6] <── [Node 5]
+          │
+Row 3: [Node 9] ──> [Node 10] ──> [Node 11] ──> [Node 12]
+```
+* **Coordinate Formula**:
+  * Even rows: `x = col * 240 + 50`, `y = row * 160 + 100`
+  * Odd rows: `x = (3 - col) * 240 + 50`, `y = row * 160 + 100`
+
+---
+
+### B. Diamond / Hierarchical Fork-Join Layout
+Ideal for workflows with parallel split and barrier sync operations (`control_flow/split` $\to$ `control_flow/sync`):
+
+```
+                   ┌──> [Branch A (Upper: y = 160)] ──┐
+[Trigger] ──> [Split]                                  ├──> [Sync] ──> [LLM]
+                   └──> [Branch B (Lower: y = 440)] ──┘
+```
+
+---
+
+### C. Bento Box / Modular Category Clusters
+Organizes nodes by functional subsystems into 2D spatial quadrants:
+* **Ingestion Quadrant** (`x: 50..300, y: 100..250`): `events/chat_message`, `storage/get_chat`, `utilities/filter`
+* **RAG & Memory Quadrant** (`x: 350..600, y: 100..250`): `ai/generate_embeddings`, `storage/get_characters`, `storage/get_lores`
+* **LLM & State Quadrant** (`x: 650..900, y: 250..450`): `ai/llm`, `storage/set_variable`
+* **Delivery Quadrant** (`x: 950..1200, y: 250..450`): `storage/insert_chat_message`, `storage/update_typing_status`
+
+---
+
+### D. Sine Wave Layout
+Alternates nodes along a gentle mathematical wave curve:
+* `x = index * 220 + 50`
+* `y = 300 + Math.sin(index * 0.8) * 120`
+
+---
+
+## 3. Automated Layout Script
+
+Use the toolkit layout helper:
 
 ```javascript
-const { styleGraph } = require('./bin/layout_styler.js');
+const { layoutGraph } = require('./bin/layout_styler.js');
 
-// Available styles: 'snake', 'diamond', 'bento', 'wave'
-const styledGraph = styleGraph(rawGraph, 'snake', true);
+// Options: 'snake', 'diamond', 'bento', 'wave'
+const cleanGraph = layoutGraph(rawGraph, 'snake');
 ```
