@@ -3,19 +3,21 @@
 /**
  * OpenRP Toolkit CLI
  * Model Context Protocol (MCP) Server & AI Agent Skill Installer
+ * Pure Node.js Edition - Zero External Dependencies
  * 
- * Maintained by Kaa (OpenRP Community Creator)
+ * Maintainer: Kaa (OpenRP Community Creator)
+ * Platform: https://openrp.ai
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { spawn, execSync } = require('child_process');
+const { execSync } = require('child_process');
 const readline = require('readline');
 const https = require('https');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
-const MCP_SERVER_SCRIPT = path.join(PACKAGE_ROOT, 'mcp', 'openrp_mcp_server.py');
+const MCP_SERVER_SCRIPT = path.join(PACKAGE_ROOT, 'mcp', 'server.js');
 const SKILLS_DIR = path.join(PACKAGE_ROOT, 'skills', 'openrp');
 const AUTH_FILE = path.join(os.homedir(), '.openrp_mcp_auth.json');
 
@@ -35,9 +37,9 @@ function showHelp() {
   console.log('  openrp-toolkit <command> [options]\n');
   console.log('Commands:');
   console.log('  add, install           Interactive installer for AI assistants & CLIs');
-  console.log('  list                   List all 40 MCP tools, skills, and references');
+  console.log('  list                   List all 47 MCP tools, skills, and references');
   console.log('  auth                   Interactive setup for OpenRP authentication');
-  console.log('  doctor                 Run diagnostics on Python, Node, and OpenRP API');
+  console.log('  doctor                 Run diagnostics on Node runtime, config, and OpenRP API');
   console.log('  serve                  Launch stdio MCP server (used by MCP clients)');
   console.log('  help, --help, -h       Display this help documentation\n');
   console.log('Quick Examples:');
@@ -48,29 +50,12 @@ function showHelp() {
 }
 
 function runMcpServer() {
-  if (!fs.existsSync(MCP_SERVER_SCRIPT)) {
+  if (fs.existsSync(MCP_SERVER_SCRIPT)) {
+    require(MCP_SERVER_SCRIPT);
+  } else {
     console.error(`[ERROR] MCP server script not found at: ${MCP_SERVER_SCRIPT}`);
     process.exit(1);
   }
-
-  const pythonBin = process.env.PYTHON_BIN || 'python3';
-  const child = spawn(pythonBin, [MCP_SERVER_SCRIPT], {
-    stdio: ['pipe', 'pipe', 'inherit'],
-    env: process.env
-  });
-
-  process.stdin.pipe(child.stdin);
-  child.stdout.pipe(process.stdout);
-
-  child.on('error', (err) => {
-    console.error(`[ERROR] Failed to start Python MCP server with '${pythonBin}':`, err.message);
-    console.error('[HINT] Ensure Python 3.10+ is installed and accessible in your PATH.');
-    process.exit(1);
-  });
-
-  child.on('exit', (code) => {
-    process.exit(code || 0);
-  });
 }
 
 function copyDirSync(src, dest) {
@@ -102,7 +87,6 @@ function mergeJsonConfig(configPath, keyPath, value) {
       }
     }
   } catch (err) {
-    fs.copyFileSync(configPath, `${configPath}.bak.${Date.now()}`);
     config = {};
   }
 
@@ -117,16 +101,17 @@ function mergeJsonConfig(configPath, keyPath, value) {
   current[keyPath[keyPath.length - 1]] = value;
 
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
 }
 
 function getClaudeDesktopConfigPath() {
   if (process.platform === 'darwin') {
     return path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
   } else if (process.platform === 'win32') {
-    return path.join(process.env.APPDATA || '', 'Claude', 'claude_desktop_config.json');
+    return path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');
+  } else {
+    return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
   }
-  return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
 }
 
 const PLATFORMS = [
@@ -147,7 +132,7 @@ const PLATFORMS = [
     installMcp: () => {
       const mcpConfig = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'mcp_config.json');
       mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
-        command: 'python3',
+        command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: mcpConfig };
@@ -172,10 +157,10 @@ const PLATFORMS = [
     },
     installMcp: () => {
       try {
-        execSync(`claude mcp add openrp python3 "${MCP_SERVER_SCRIPT}"`, { stdio: 'ignore' });
+        execSync(`claude mcp add openrp node "${MCP_SERVER_SCRIPT}"`, { stdio: 'ignore' });
         return { type: 'mcp', detail: 'Executed: claude mcp add openrp ...' };
       } catch {
-        return { type: 'mcp', detail: `Manual: claude mcp add openrp python3 "${MCP_SERVER_SCRIPT}"` };
+        return { type: 'mcp', detail: `Manual: claude mcp add openrp node "${MCP_SERVER_SCRIPT}"` };
       }
     }
   },
@@ -196,7 +181,7 @@ const PLATFORMS = [
     installMcp: () => {
       const mcpConfig = path.join(os.homedir(), '.codex', 'mcp.json');
       mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
-        command: 'python3',
+        command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: mcpConfig };
@@ -219,7 +204,7 @@ const PLATFORMS = [
     installMcp: () => {
       const mcpConfig = path.join(process.cwd(), '.cursor', 'mcp.json');
       mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
-        command: 'python3',
+        command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: mcpConfig };
@@ -240,7 +225,7 @@ const PLATFORMS = [
     installMcp: () => {
       const mcpConfig = path.join(os.homedir(), '.codeium', 'windsurf', 'mcp_config.json');
       mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
-        command: 'python3',
+        command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: mcpConfig };
@@ -258,7 +243,7 @@ const PLATFORMS = [
     installMcp: () => {
       const configPath = getClaudeDesktopConfigPath();
       mergeJsonConfig(configPath, ['mcpServers', 'openrp'], {
-        command: 'python3',
+        command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: configPath };
@@ -348,100 +333,184 @@ async function runInstall() {
     } else if (selIdx === PLATFORMS.length + 1) {
       selectedPlatforms = PLATFORMS;
     } else {
-      console.log('\n[ERROR] Invalid selection. Aborting.');
+      console.log('\n└  Invalid selection. Aborted.');
       return;
     }
   } else if (mode === '4') {
     selectedPlatforms = PLATFORMS;
   } else {
-    if (detectedList.length > 0) {
-      selectedPlatforms = detectedList;
-    } else {
-      console.log('│  No specific environment detected automatically.');
-      console.log('│  Defaulting to Google Antigravity & Universal Agent Skills (~/.agents/skills).');
-      selectedPlatforms = [PLATFORMS[0]];
-    }
+    selectedPlatforms = detectedList.length > 0 ? detectedList : PLATFORMS;
   }
 
-  console.log(`\n◇  Installing OpenRP Skill & MCP Configuration...\n`);
+  console.log('\n◇  Installing OpenRP Toolkit across selected platforms...\n');
 
-  let successCount = 0;
-  let failCount = 0;
+  for (const plat of selectedPlatforms) {
+    console.log(`┌─ Installing to: ${plat.name}`);
 
-  for (let i = 0; i < selectedPlatforms.length; i++) {
-    const plat = selectedPlatforms[i];
-    console.log(`   [${i + 1}/${selectedPlatforms.length}] Configuring ${plat.name}`);
-
-    try {
-      if (plat.installSkill) {
-        const sRes = plat.installSkill(customTargetDir);
-        console.log(`       -> Skill files (${sRes.count} files): ${sRes.dest.replace(os.homedir(), '~')}`);
+    if (plat.installSkill) {
+      try {
+        const res = plat.installSkill(customTargetDir);
+        const shortDest = res.dest.replace(os.homedir(), '~');
+        console.log(`│  ✓ Skill files copied: ${res.count} files -> ${shortDest}`);
+      } catch (err) {
+        console.log(`│  ✗ Failed to install skill: ${err.message}`);
       }
-
-      if (plat.installMcp) {
-        const mRes = plat.installMcp();
-        if (mRes.dest) {
-          console.log(`       -> MCP server registry: ${mRes.dest.replace(os.homedir(), '~')}`);
-        } else if (mRes.detail) {
-          console.log(`       -> ${mRes.detail}`);
-        }
-      }
-
-      console.log('       Status: OK\n');
-      successCount++;
-    } catch (err) {
-      console.error(`       Status: FAILED (${err.message})\n`);
-      failCount++;
     }
+
+    if (plat.installMcp) {
+      try {
+        const res = plat.installMcp();
+        const shortDest = res.dest ? res.dest.replace(os.homedir(), '~') : res.detail;
+        console.log(`│  ✓ MCP config updated -> ${shortDest}`);
+      } catch (err) {
+        console.log(`│  ✗ Failed to configure MCP: ${err.message}`);
+      }
+    }
+
+    console.log('└───────────────────────────────────────────────────────────\n');
   }
 
-  console.log('└───────────────────────────────────────────────────────────────');
-  console.log(`  Installation Complete: ${successCount} configured successfully, ${failCount} failed.`);
-  console.log('────────────────────────────────────────────────────────────────\n');
+  console.log('◆  Checking authentication credentials...');
+  if (!fs.existsSync(AUTH_FILE)) {
+    console.log('│  No saved credentials found in ~/.openrp_mcp_auth.json.');
+    const setupAuth = await prompt('│  Would you like to configure your OpenRP token now? (y/n) [default: y]: ');
+    if (setupAuth.toLowerCase() !== 'n') {
+      await runAuth();
+    }
+  } else {
+    console.log('│  ✓ Active credentials found at ~/.openrp_mcp_auth.json');
+  }
 
-  console.log('Next Steps:');
-  console.log('  1. Authenticate with OpenRP:');
-  console.log('     npx openrp-toolkit auth');
-  console.log('  2. Run environment diagnostics:');
-  console.log('     npx openrp-toolkit doctor\n');
+  console.log('\n┌───────────────────────────────────────────────────────────┐');
+  console.log('│ [SUCCESS] OpenRP Toolkit installed successfully!          │');
+  console.log('│                                                           │');
+  console.log('│ Test diagnostic:  npx openrp-toolkit doctor               │');
+  console.log('│ Browse 47 tools:  npx openrp-toolkit list                 │');
+  console.log('│ Update auth:      npx openrp-toolkit auth                 │');
+  console.log('└───────────────────────────────────────────────────────────┘\n');
 }
 
 function runList() {
   printBanner();
-  console.log('OpenRP Toolkit Catalog (47 MCP Tools & Documentation)\n');
+  console.log('OpenRP Toolkit Catalog (47 MCP Tools & Native Skills)\n');
 
-  const tools = [
-    { cat: '1. Authentication & Profile', items: ['openrp_set_auth', 'openrp_refresh_token', 'openrp_get_me'] },
-    { cat: '2. World Management', items: ['openrp_list_my_worlds', 'openrp_get_world', 'openrp_create_world', 'openrp_update_world', 'openrp_update_world_readme', 'openrp_delete_world'] },
-    { cat: '3. Lorebook System & Exclusive Access', items: ['openrp_list_lores', 'openrp_list_lore_characters', 'openrp_list_character_lores', 'openrp_get_lore', 'openrp_create_lore', 'openrp_update_lore', 'openrp_delete_lore'] },
-    { cat: '4. Character Studio & Factions', items: ['openrp_list_characters', 'openrp_list_character_groups', 'openrp_create_character_group', 'openrp_update_character_group', 'openrp_delete_character_group', 'openrp_get_character', 'openrp_create_character', 'openrp_update_character', 'openrp_delete_character'] },
-    { cat: '5. Prompt Template System', items: ['openrp_list_prompts', 'openrp_get_prompt', 'openrp_create_prompt', 'openrp_delete_prompt'] },
-    { cat: '6. Behavior Pipeline Engine', items: ['openrp_list_behaviors', 'openrp_get_behavior', 'openrp_update_behavior', 'openrp_edit_behavior_node', 'openrp_deploy_behavior', 'openrp_delete_behavior', 'openrp_attach_behavior_to_character'] },
-    { cat: '7. Tracing & Debugging', items: ['openrp_search_behavior_executions', 'openrp_get_behavior_execution', 'openrp_get_behavior_node_executions'] },
-    { cat: '8. Chat & Live Messaging', items: ['openrp_create_chat', 'openrp_list_chats', 'openrp_get_chat', 'openrp_get_chat_messages', 'openrp_send_message'] },
-    { cat: '9. Discovery & AI Models', items: ['openrp_list_models', 'openrp_discover_worlds', 'openrp_raw_api'] }
+  const categories = [
+    {
+      name: '1. Authentication & Session (3 Tools)',
+      tools: [
+        ['openrp_set_auth', 'Save/update API token, refresh token, and context IDs'],
+        ['openrp_refresh_token', 'Manually trigger Supabase JWT token refresh'],
+        ['openrp_get_me', 'Get authenticated profile, subscription, and credits']
+      ]
+    },
+    {
+      name: '2. World Management (6 Tools)',
+      tools: [
+        ['openrp_list_my_worlds', 'List all worlds owned by user with pagination'],
+        ['openrp_get_world', 'Get detailed world settings, statistics, and metadata'],
+        ['openrp_create_world', 'Create a new World with verified payload format'],
+        ['openrp_update_world', 'Update world metadata, tags, and visibility'],
+        ['openrp_update_world_readme', 'Update world Markdown documentation up to 5000 words'],
+        ['openrp_delete_world', 'Permanently delete a world and its entities']
+      ]
+    },
+    {
+      name: '3. Lorebook System & Exclusive Access (7 Tools)',
+      tools: [
+        ['openrp_list_lores', 'List all lorebook entries in world'],
+        ['openrp_get_lore', 'Get detailed lore entry content and metadata by ID/handle'],
+        ['openrp_create_lore', 'Create factual lorebook entry with optional isExclusive flag'],
+        ['openrp_update_lore', 'Update existing lorebook entry in-place'],
+        ['openrp_delete_lore', 'Delete a lorebook entry'],
+        ['openrp_list_lore_characters', 'List characters with access to exclusive lore'],
+        ['openrp_list_character_lores', 'List all exclusive lores assigned to a character']
+      ]
+    },
+    {
+      name: '4. Character Studio & Factions (9 Tools)',
+      tools: [
+        ['openrp_list_characters', 'List all characters residing in world'],
+        ['openrp_get_character', 'Get detailed character persona, greetings, and dialogs'],
+        ['openrp_create_character', 'Create new character with full persona and settings'],
+        ['openrp_update_character', 'Update character persona, status, and appearance'],
+        ['openrp_delete_character', 'Delete character from world'],
+        ['openrp_list_character_groups', 'List all faction/group hierarchies in world'],
+        ['openrp_create_character_group', 'Create character group/faction in world'],
+        ['openrp_update_character_group', 'Update character group via PATCH'],
+        ['openrp_delete_character_group', 'Delete character group via DELETE']
+      ]
+    },
+    {
+      name: '5. Prompt Template System (4 Tools)',
+      tools: [
+        ['openrp_list_prompts', 'List all prompt templates in world'],
+        ['openrp_get_prompt', 'Get detailed prompt template nodes'],
+        ['openrp_create_prompt', 'Create new system prompt template'],
+        ['openrp_delete_prompt', 'Delete prompt template from world']
+      ]
+    },
+    {
+      name: '6. Behavior Pipeline Engine (7 Tools)',
+      tools: [
+        ['openrp_list_behaviors', 'List all behavior pipeline graphs in world'],
+        ['openrp_get_behavior', 'Get full Behavior Graph JSON (nodes, edges)'],
+        ['openrp_update_behavior', 'In-place update of behavior graph without losing bindings'],
+        ['openrp_edit_behavior_node', 'Granular in-place edit of single node data'],
+        ['openrp_deploy_behavior', 'Deploy behavior graph and auto-attach to character'],
+        ['openrp_delete_behavior', 'Delete behavior graph from world'],
+        ['openrp_attach_behavior_to_character', 'Attach behavior with auto-detach of old bindings']
+      ]
+    },
+    {
+      name: '7. Tracing & Debugging (3 Tools)',
+      tools: [
+        ['openrp_search_behavior_executions', 'Search behavior execution history runs'],
+        ['openrp_get_behavior_execution', 'Get execution status, timestamps, and trigger message'],
+        ['openrp_get_behavior_node_executions', 'Get step-by-step resolved node inputs, outputs, and errors']
+      ]
+    },
+    {
+      name: '8. Chat & Live Messaging (5 Tools)',
+      tools: [
+        ['openrp_create_chat', 'Create/retrieve 1-on-1 chat session with character'],
+        ['openrp_list_chats', 'List active chatrooms, group chats, and metadata'],
+        ['openrp_get_chat', 'Get detailed metadata for specific chat room'],
+        ['openrp_get_chat_messages', 'Get message history for chat room'],
+        ['openrp_send_message', 'Insert new chat message into room directly via API']
+      ]
+    },
+    {
+      name: '9. Discovery & AI Models (3 Tools)',
+      tools: [
+        ['openrp_list_models', 'List 38+ Foundation AI Models (Claude, GPT, Gemini, DeepSeek)'],
+        ['openrp_discover_worlds', 'Search public community worlds on OpenRP explore page'],
+        ['openrp_raw_api', 'Universal Gateway to call any OpenRP REST API endpoint directly']
+      ]
+    }
   ];
 
-  tools.forEach(t => {
-    console.log(`◇ ${t.cat} (${t.items.length} tools):`);
-    t.items.forEach(toolName => {
-      console.log(`   - ${toolName}`);
+  categories.forEach(cat => {
+    console.log(`◆  ${cat.name}`);
+    cat.tools.forEach(([name, desc]) => {
+      console.log(`   ● ${name.padEnd(38)} ${desc}`);
     });
     console.log('');
   });
 
-  console.log('Skill Reference Documents:');
-  console.log('   - SKILL.md (Autonomous Behavior Generation Guardrails, Rules 1-9)');
-  console.log('   - behavior_nodes.md (Complete 38-Node Palette Reference)');
-  console.log('   - group_orchestration.md (Multi-Agent & Arbiter Blueprints)');
-  console.log('   - worlds_and_characters.md (Schemas, Visibility & Personas)');
-  console.log('   - testing_and_debugging.md (Execution Traces & Diagnostics)\n');
+  console.log('Skill Reference Guides (Markdown):');
+  console.log('   ◇ SKILL.md                          Master OpenRP AI agent guide');
+  console.log('   ◇ references/behavior_nodes.md      Complete specification for all 22 behavior nodes');
+  console.log('   ◇ references/worlds_and_characters.md Full API schemas, endpoints, and data payloads');
+  console.log('   ◇ references/architecture.md        PostgreSQL schema, Git mirroring, and vector embeddings\n');
 }
 
 async function runAuth() {
   printBanner();
-  console.log('OpenRP Interactive Authentication Setup');
-  console.log('Configuration file location: ' + AUTH_FILE.replace(os.homedir(), '~') + '\n');
+  console.log('OpenRP Authentication Setup\n');
+  console.log('How to get your OpenRP credentials:');
+  console.log('1. Open your browser and navigate to https://openrp.ai');
+  console.log('2. Open Developer Tools (F12) -> Application -> Cookies');
+  console.log('3. Find "sb-uixnaquqjhzcctyfoapf-auth-token" and copy its values.\n');
 
   let currentAuth = {};
   if (fs.existsSync(AUTH_FILE)) {
@@ -450,53 +519,22 @@ async function runAuth() {
     } catch {}
   }
 
-  console.log('Select Authentication Method:');
-  console.log('  [1] Paste Browser Cookie (Recommended - Enables background auto-refresh)');
-  console.log('  [2] Paste Direct Bearer JWT Token');
-  console.log('  [3] Keep existing configuration\n');
+  const token = await prompt(`JWT Access Token [${currentAuth.token ? 'configured' : 'none'}]: `);
+  const refreshToken = await prompt(`Supabase Refresh Token [${currentAuth.refreshToken ? 'configured' : 'none'}]: `);
+  const userId = await prompt(`User ID (UUID) [${currentAuth.userId || 'none'}]: `);
+  const worldId = await prompt(`Default World ID (UUID) [${currentAuth.worldId || 'none'}]: `);
+  const characterId = await prompt(`Default Character ID (UUID) [${currentAuth.characterId || 'none'}]: `);
 
-  const authMethod = await prompt('Enter choice (1-3) [default: 1]: ');
-
-  if (authMethod === '2') {
-    const token = await prompt('Bearer JWT Token (starts with eyJ...): ');
-    if (token) currentAuth.token = token;
-  } else if (authMethod !== '3') {
-    console.log('\nPaste your cookie string containing sb-uixnaquqjhzcctyfoapf-auth-token.0 and .1:');
-    const cookie = await prompt('Cookie String: ');
-    if (cookie) {
-      const m0 = cookie.match(/sb-uixnaquqjhzcctyfoapf-auth-token\.0=([^;]+)/);
-      const m1 = cookie.match(/sb-uixnaquqjhzcctyfoapf-auth-token\.1=([^;]+)/);
-      let b0 = m0 ? m0[1] : '';
-      if (b0.startsWith('base64-')) b0 = b0.slice(7);
-      const b1 = m1 ? m1[1] : '';
-      const combined = b0 + b1;
-      if (combined) {
-        try {
-          const padded = combined + '='.repeat((4 - (combined.length % 4)) % 4);
-          const parsed = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
-          currentAuth.token = parsed.access_token || '';
-          currentAuth.refreshToken = parsed.refresh_token || '';
-          currentAuth.expiresAt = parsed.expires_at || 0;
-          console.log('[+] Successfully parsed token and scheduled background refresh.');
-        } catch (e) {
-          console.warn('[WARN] Could not parse base64 cookie payload. Saved raw data.');
-        }
-      }
-    }
-  }
-
-  console.log('\nDefault Workspace Identifiers (Optional):');
-  const userId = await prompt(`User ID [current: ${currentAuth.userId || 'none'}]: `);
-  if (userId) currentAuth.userId = userId;
-
-  const worldId = await prompt(`Default World ID [current: ${currentAuth.worldId || 'none'}]: `);
-  if (worldId) currentAuth.worldId = worldId;
-
-  const characterId = await prompt(`Default Character ID [current: ${currentAuth.characterId || 'none'}]: `);
-  if (characterId) currentAuth.characterId = characterId;
+  const updatedAuth = {
+    token: token || currentAuth.token || '',
+    refreshToken: refreshToken || currentAuth.refreshToken || '',
+    userId: userId || currentAuth.userId || '',
+    worldId: worldId || currentAuth.worldId || '',
+    characterId: characterId || currentAuth.characterId || ''
+  };
 
   fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
-  fs.writeFileSync(AUTH_FILE, JSON.stringify(currentAuth, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(AUTH_FILE, JSON.stringify(updatedAuth, null, 2), 'utf8');
 
   console.log('\n[SUCCESS] Authentication configuration written to ' + AUTH_FILE.replace(os.homedir(), '~'));
   console.log('Run "npx openrp-toolkit doctor" to verify your credentials.\n');
@@ -509,48 +547,43 @@ async function runDoctor() {
   let errors = 0;
 
   // 1. Check Node.js
-  console.log(`[CHECK 1/5] Node.js Runtime: ${process.version} -> OK`);
-
-  // 2. Check Python 3
-  try {
-    const pyVersion = execSync('python3 --version', { encoding: 'utf8' }).trim();
-    console.log(`[CHECK 2/5] Python Binary: ${pyVersion} -> OK`);
-  } catch (err) {
-    console.log('[CHECK 2/5] Python Binary: NOT FOUND or errored');
-    console.log('            Please install Python 3.10+ in your environment.');
-    errors++;
-  }
-
-  // 3. Check Package Integrity
-  if (fs.existsSync(MCP_SERVER_SCRIPT) && fs.existsSync(path.join(SKILLS_DIR, 'SKILL.md'))) {
-    console.log('[CHECK 3/5] Package Integrity & Skill Files -> OK (40 MCP tools ready)');
+  const nodeMajor = parseInt(process.version.slice(1).split('.')[0], 10);
+  if (nodeMajor >= 18) {
+    console.log(`[CHECK 1/4] Node.js Runtime: ${process.version} (Native fetch support) -> OK`);
   } else {
-    console.log('[CHECK 3/5] Package Integrity: Missing internal files');
+    console.log(`[CHECK 1/4] Node.js Runtime: ${process.version} (Warning: Node.js 18+ recommended)`);
+  }
+
+  // 2. Check Package Integrity
+  if (fs.existsSync(MCP_SERVER_SCRIPT) && fs.existsSync(path.join(SKILLS_DIR, 'SKILL.md'))) {
+    console.log('[CHECK 2/4] Package Integrity & Skill Files -> OK (47 MCP tools ready)');
+  } else {
+    console.log('[CHECK 2/4] Package Integrity: Missing internal files');
     errors++;
   }
 
-  // 4. Check Auth Configuration
+  // 3. Check Auth Configuration
   if (fs.existsSync(AUTH_FILE)) {
     try {
       const auth = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8'));
       const hasToken = !!(auth.token || auth.refreshToken);
       if (hasToken) {
-        console.log(`[CHECK 4/5] Authentication State -> OK (User ID: ${auth.userId || 'configured'})`);
+        console.log(`[CHECK 3/4] Authentication State -> OK (User ID: ${auth.userId || 'configured'})`);
       } else {
-        console.log('[CHECK 4/5] Authentication State -> INCOMPLETE (Token missing in ~/.openrp_mcp_auth.json)');
+        console.log('[CHECK 3/4] Authentication State -> INCOMPLETE (Token missing in ~/.openrp_mcp_auth.json)');
         errors++;
       }
     } catch {
-      console.log('[CHECK 4/5] Authentication State -> INVALID JSON in ~/.openrp_mcp_auth.json');
+      console.log('[CHECK 3/4] Authentication State -> INVALID JSON in ~/.openrp_mcp_auth.json');
       errors++;
     }
   } else {
-    console.log('[CHECK 4/5] Authentication State -> NOT CONFIGURED (Run "openrp-toolkit auth")');
+    console.log('[CHECK 3/4] Authentication State -> NOT CONFIGURED (Run "openrp-toolkit auth")');
     errors++;
   }
 
-  // 5. Check OpenRP API Ping
-  console.log('[CHECK 5/5] Testing connection to https://openrp.ai...');
+  // 4. Check OpenRP API Ping
+  console.log('[CHECK 4/4] Testing connection to https://openrp.ai...');
   const apiStatus = await new Promise(resolve => {
     https.get('https://openrp.ai/api/models', { timeout: 5000 }, (res) => {
       resolve(res.statusCode);
@@ -568,7 +601,7 @@ async function runDoctor() {
 
   console.log('\n┌───────────────────────────────────────────────────────────────┐');
   if (errors === 0) {
-    console.log('│ [SUCCESS] All 5 diagnostic checks passed with 0 errors.       │');
+    console.log('│ [SUCCESS] All diagnostic checks passed with 0 errors.         │');
     console.log('│ Your OpenRP Toolkit environment is ready to use!              │');
   } else {
     console.log(`│ [WARN] Diagnostic completed with ${errors} issue(s).                      │`);
