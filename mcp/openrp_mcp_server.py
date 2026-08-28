@@ -560,12 +560,13 @@ TOOLS = [
     },
     {
         "name": "openrp_attach_behavior_to_character",
-        "description": "Attach an existing behavior graph to a character.",
+        "description": "Attach an existing behavior graph to a character (automatically replaces previous bindings to avoid HTTP 500 unique constraint error).",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "characterId": {"type": "string", "description": "Character ID (optional if saved in auth)"},
-                "behaviorId": {"type": "string", "description": "Behavior ID to attach"}
+                "behaviorId": {"type": "string", "description": "Behavior ID to attach"},
+                "replaceExisting": {"type": "boolean", "description": "Whether to automatically detach existing behaviors first", "default": True}
             },
             "required": ["behaviorId"]
         }
@@ -1091,6 +1092,13 @@ def handle_tool_call(name, args):
         }
         
         if c:
+            existing = make_request(f"/api/v1/characters/{c}/behaviors")
+            if not existing.get("error") and "data" in existing:
+                for item in existing.get("data", {}).get("data", []):
+                    cb_id = item.get("id")
+                    if cb_id:
+                        make_request(f"/api/v1/character-behaviors/{cb_id}", method="DELETE")
+
             attach_payload = {
                 "behaviorId": behavior_id,
                 "behaviorRegistryTagId": None
@@ -1114,6 +1122,15 @@ def handle_tool_call(name, args):
         b = args.get("behaviorId")
         if not c or not b:
             return {"error": True, "message": "characterId and behaviorId are required"}
+            
+        if args.get("replaceExisting", True):
+            existing = make_request(f"/api/v1/characters/{c}/behaviors")
+            if not existing.get("error") and "data" in existing:
+                for item in existing.get("data", {}).get("data", []):
+                    cb_id = item.get("id")
+                    if cb_id:
+                        make_request(f"/api/v1/character-behaviors/{cb_id}", method="DELETE")
+
         payload = {
             "behaviorId": b,
             "behaviorRegistryTagId": None
