@@ -1350,11 +1350,12 @@ async function handleToolCall(name, args = {}) {
   if (name === 'openrp_send_message') {
     const chatId = args.chatId;
     if (!chatId) return { error: true, message: 'chatId is required' };
-    const payload = {
-      content: args.content
-    };
+    const payload = {};
+    if (args.content !== undefined) payload.content = args.content;
+    const pId = args.chatParticipantId || args.participantId;
+    if (pId) payload.chatParticipantId = pId;
     if (args.parentId) payload.parentId = args.parentId;
-    if (args.chatParticipantId) payload.chatParticipantId = args.chatParticipantId;
+    if (args.attachments) payload.attachments = args.attachments;
     return makeRequest(`/api/chats/${chatId}/messages`, { method: 'POST', body: payload });
   }
 
