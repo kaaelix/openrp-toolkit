@@ -219,10 +219,47 @@ For further deep dives, live updates, or raw specification references, refer to 
 
 ## Authentication & Session Management
 
-To interact with OpenRP APIs via MCP tools:
-1. **Using Browser Cookie (Recommended)**: Pass raw browser cookies (`sb-uixnaquqjhzcctyfoapf-auth-token.0` and `.1`) to `openrp_set_auth({"cookie": "...", "userId": "...", "worldId": "..."})`. This enables automatic background token refreshing via Supabase Auth when the 1-hour access token expires.
-2. **Using Direct JWT Token**: Pass the Bearer token string to `openrp_set_auth({"token": "eyJ..."})`.
-3. **Session Verification (`openrp_get_me`)**: Call `openrp_get_me` to verify active authentication. It retrieves the authenticated user's ID, display name, handle, email, bio, and avatar.
+To interact with OpenRP APIs via CLI and MCP tools, multiple authentication workflows are supported:
+
+### Method 1: Web Browser 1-Click Auto-Sync (Recommended)
+Run the authentication command in your terminal:
+```bash
+npx openrp-toolkit auth
+# or
+npx openrp-toolkit web-login
+```
+1. The CLI launches a local listening gateway on `http://127.0.0.1:45678`.
+2. A minimalist Black & White Gateway opens in your browser.
+3. Open `https://openrp.ai` in your browser where you are logged in.
+4. Execute the bridge via **Bookmarklet** or **Console (F12)** (just like Eruda):
+   ```javascript
+   javascript:(function(){var s=document.createElement('script');s.src='http://127.0.0.1:45678/bridge.js';document.body.appendChild(s);})();
+   ```
+5. The browser verifies the session and confirms:
+   - User Name & Handle
+   - "Authorization Granted"
+   - Credentials are automatically saved to `~/.openrp_mcp_auth.json`.
+
+### Method 2: Automated Userscript (`openrp-auth.user.js`)
+Install the included [openrp-auth.user.js](file:///data/data/com.termux/files/home/openrp-toolkit/openrp-auth.user.js) into Tampermonkey, Violentmonkey, or Kiwi Browser. Whenever you visit `https://openrp.ai/`, the script automatically detects active sessions and links them to your local CLI & MCP server.
+
+### Method 3: Manual Cookie / JWT Token Paste
+Pass raw Supabase cookies (`sb-uixnaquqjhzcctyfoapf-auth-token`) or JWT Bearer tokens directly:
+```bash
+npx openrp-toolkit auth
+# Select Option 2 and paste token
+```
+
+### Method 4: MCP Tool Invocation (`openrp_set_auth`)
+AI Agents can set authentication at runtime by calling:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "cookie": "sb-uixnaquqjhzcctyfoapf-auth-token=...",
+  "userId": "usr_...",
+  "worldId": "wrld_..."
+}
+```
 
 ## HTTP Status & Error Code Reference
 

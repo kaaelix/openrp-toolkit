@@ -210,6 +210,16 @@ function sanitizeGraph(graph) {
 const TOOLS = [
   // 1. AUTH & PROFILE
   {
+    name: 'openrp_auth',
+    description: 'Open OpenRP 1-Click Auth Gateway to connect your active OpenRP session to CLI & MCP.',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'openrp_web_login',
+    description: 'Launch the OpenRP Web Auth Gateway and get 1-click Eruda-style bridge script for openrp.ai.',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
     name: 'openrp_set_auth',
     description: 'Save or update OpenRP API credentials (token, refreshToken, userId, worldId, characterId).',
     inputSchema: {
@@ -909,20 +919,8 @@ const TOOLS = [
     }
   },
   {
-    name: 'openrp_login',
-    description: 'Direct Email & Password login to OpenRP via Supabase Auth API. Automatically configures JWT, Refresh Token, User ID, World ID, and Character ID in auth state.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        email: { type: 'string', description: 'OpenRP account email' },
-        password: { type: 'string', description: 'OpenRP account password' }
-      },
-      required: ['email', 'password']
-    }
-  },
-  {
     name: 'openrp_web_login',
-    description: 'Start a local HTTP auth receiver on http://127.0.0.1:45678 for 1-click web browser cookie/session synchronization.',
+    description: 'Launch the local Quantum Auth Bridge on http://127.0.0.1:45678 for 1-click web browser cookie and session synchronization.',
     inputSchema: {
       type: 'object',
       properties: {}
@@ -997,79 +995,25 @@ async function handleToolCall(name, args = {}) {
   }, 1500);
 
   // 1. AUTH & PROFILE
-  if (name === 'openrp_login') {
-    const { email, password } = args;
-    if (!email || !password) return { error: true, message: 'email and password are required' };
-
+  if (name === 'openrp_auth' || name === 'openrp_web_login') {
     try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
+      const plat = process.platform;
+      const url = 'http://127.0.0.1:45678';
+      if (plat === 'darwin') execSync(`open "${url}"`, { stdio: 'ignore' });
+      else if (plat === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
+      else execSync(`xdg-open "${url}" 2>/dev/null || termux-open-url "${url}" 2>/dev/null || true`, { stdio: 'ignore' });
+    } catch (e) {}
 
-      const data = await res.json();
-      if (!res.ok || !data.access_token) {
-        return { error: true, message: data.error_description || data.msg || 'Authentication failed' };
-      }
-
-      const token = data.access_token;
-      const rToken = data.refresh_token;
-      const authUid = data.user?.id;
-
-      let userAccount = {};
-      try {
-        const meRes = await fetch('https://openrp.ai/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } });
-        userAccount = (await meRes.json()).data || {};
-      } catch (e) {}
-
-      let worldId = '';
-      let characterId = '';
-      try {
-        const worldsRes = await fetch(`https://openrp.ai/api/users/${authUid}/worlds?limit=1`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const worldsData = (await worldsRes.json()).data;
-        const worlds = worldsData?.data || (Array.isArray(worldsData) ? worldsData : []);
-        if (worlds.length > 0) {
-          worldId = worlds[0].id;
-          const charsRes = await fetch(`https://openrp.ai/api/users/${authUid}/worlds/${worldId}/characters?limit=1`, { headers: { 'Authorization': `Bearer ${token}` } });
-          const charsData = (await charsRes.json()).data;
-          const chars = charsData?.data || (Array.isArray(charsData) ? charsData : []);
-          if (chars.length > 0) characterId = chars[0].id;
-        }
-      } catch (e) {}
-
-      saveAuth({
-        token,
-        refreshToken: rToken,
-        userId: authUid,
-        worldId,
-        characterId,
-        expiresAt: data.expires_at || (Math.floor(Date.now() / 1000) + 3600)
-      });
-
-      return {
-        success: true,
-        message: `Successfully logged in as ${userAccount.name || email}`,
-        user: {
-          id: authUid,
-          name: userAccount.name || email,
-          email: userAccount.email || email,
-          defaultWorldId: worldId,
-          defaultCharacterId: characterId
-        }
-      };
-    } catch (err) {
-      return { error: true, message: err.message };
-    }
-  }
-
-  if (name === 'openrp_web_login') {
     return {
       success: true,
-      message: 'Run `npx openrp-toolkit web-login` in your terminal to launch the 1-click web browser auth receiver on http://127.0.0.1:45678'
+      message: 'OpenRP Auth Gateway is available on http://127.0.0.1:45678. Run the bridge script on openrp.ai to authorize.',
+      gatewayUrl: 'http://127.0.0.1:45678',
+      scriptSnippet: "javascript:(function(){var s=document.createElement('script');s.src='http://127.0.0.1:45678/bridge.js';document.body.appendChild(s);})();",
+      instructions: [
+        '1. Open https://openrp.ai in your browser (where you are logged in).',
+        '2. Run the scriptSnippet in browser Console or click the bookmarklet.',
+        '3. Click "Yes, Authorize" on the popup window.'
+      ]
     };
   }
 
