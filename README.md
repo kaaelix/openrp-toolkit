@@ -48,7 +48,7 @@ Run the interactive installer:
 ```bash
 npx openrp-toolkit install
 ```
-*(Alternative aliases: `npx openrp-toolkit add`)*
+*(Alternative alias: `npx openrp-toolkit add`)*
 
 The installer scans your local system and automatically detects:
 * Google Antigravity & Gemini CLI (`~/.agents/skills/openrp` and `mcp_config.json`)
@@ -260,6 +260,59 @@ When using AI coding assistants like **Google Antigravity**, **Gemini CLI**, **C
 
 ---
 
+## Complete 38 Behavior Nodes Architecture
+
+OpenRP behavior pipelines support 38 specialized ReactFlow node types organized across 7 categories:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       OPENRP BEHAVIOR ENGINE (38 NODES)                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 1. EVENTS       : chat_message                                              │
+│ 2. AI / LLM     : llm, generate_image, classify_text, extract_json          │
+│ 3. CONTROL FLOW : if, end_if, loop, end_loop, break, continue, switch,       │
+│                   case, try, catch, end_try, throw                          │
+│ 4. STORAGE      : get_chat, insert_chat_message, update_chat_message,       │
+│                   search_lore, get_character, update_variable, get_variable │
+│ 5. UTILITIES    : code_execution, template, filter, sort, transform, math,  │
+│                   regex_match, regex_replace, delay, http_request           │
+│ 6. CONTEXT      : get_current_time, get_chat_history, get_user_profile      │
+│ 7. STREAMING    : stream_text, read_stream                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Multi-Agent Group Chat Coordination Blueprints
+
+When multiple AI characters join the same chatroom, avoid reply storms and infinite trigger loops by using one of three proven coordination architectures:
+
+### Blueprint 1: Mention-Gated Activation
+The character evaluates whether its name or `@handle` is present before triggering LLM generation:
+```
+[events/chat_message]
+       │
+       ▼
+[storage/get_chat] (expand: ["participants"])
+       │
+       ▼
+[utilities/filter (botFilter)] (expr: item.characterId === myCharId)
+       │
+       ▼
+[control_flow/if (mentionGate)]
+       ├── [True Branch]  ──► [ai/llm] ──► [storage/insert_chat_message]
+       └── [False Branch] ──► [control_flow/end_if] (Halt silently)
+```
+
+### Blueprint 2: Round-Robin Turn Cycling
+Bots take turns participating in group discussions. A bot only speaks if the last speaker was a human or a different bot:
+```javascript
+// In control_flow/if node:
+getChatMessage.chatParticipantId !== botFilter.list[0].id && getChatParticipant.userId !== null
+```
+
+---
+
 ## World Visibility Policy (Official Developer Notice)
 
 * **`WORLD_VISIBILITY_PUBLIC` (Default)**: Visible in global explore feeds, community discover queries, and public profile listings for all users.
@@ -284,6 +337,9 @@ openrp-toolkit/
 ├── skills/
 │   └── openrp/
 │       ├── SKILL.md                   # AI Agent Skill Definition (Pure English)
+│       ├── commands/                  # AI Slash Command Definitions (/openrp-toolkit)
+│       │   ├── openrp-toolkit.md
+│       │   └── openrp.md
 │       └── references/
 │           ├── behavior_nodes.md      # Complete 38-Node technical manual
 │           ├── group_orchestration.md # Multi-agent group chat architecture
