@@ -106,6 +106,29 @@ function mergeJsonConfig(configPath, keyPath, value) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
 }
 
+function syncAntigravityMcpSchemas() {
+  const mcpDir = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'mcp', 'openrp');
+  if (fs.existsSync(mcpDir)) {
+    try {
+      const serverCode = fs.readFileSync(MCP_SERVER_SCRIPT, 'utf8');
+      const startIdx = serverCode.indexOf('const TOOLS = [');
+      const endIdx = serverCode.indexOf('];\n\n// Helper to copy directory recursively', startIdx);
+      if (startIdx !== -1 && endIdx !== -1) {
+        const toolsCode = serverCode.slice(startIdx + 'const TOOLS = '.length, endIdx + 1);
+        const tools = eval(toolsCode);
+        for (const t of tools) {
+          const schema = {
+            name: t.name,
+            description: t.description,
+            parameters: t.inputSchema || { type: 'object', properties: {} }
+          };
+          fs.writeFileSync(path.join(mcpDir, t.name + '.json'), JSON.stringify(schema, null, 2));
+        }
+      }
+    } catch (e) {}
+  }
+}
+
 function getClaudeDesktopConfigPath() {
   if (process.platform === 'darwin') {
     return path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
@@ -137,6 +160,7 @@ const PLATFORMS = [
         command: 'node',
         args: [MCP_SERVER_SCRIPT]
       });
+      syncAntigravityMcpSchemas();
       return { type: 'mcp', dest: mcpConfig };
     }
   },
