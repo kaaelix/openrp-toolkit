@@ -689,15 +689,72 @@ const TOOLS = [
   },
   {
     name: 'openrp_attach_behavior_to_character',
-    description: 'Attach an existing behavior graph to a character (auto-replaces previous bindings to avoid HTTP 500).',
+    description: 'Attach an existing behavior graph to a character (auto-replaces previous bindings to avoid HTTP 500 / dual execution conflicts).',
     inputSchema: {
       type: 'object',
       properties: {
         characterId: { type: 'string', description: 'Character ID (optional if saved in auth)' },
         behaviorId: { type: 'string', description: 'Behavior ID to attach' },
+        config: { type: 'object', description: 'Optional custom variables matching trigger customFields' },
         replaceExisting: { type: 'boolean', description: 'Automatically detach existing behaviors first', default: true }
       },
       required: ['behaviorId']
+    }
+  },
+  {
+    name: 'openrp_list_character_behaviors',
+    description: 'List all behaviors directly attached to a specific character.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        characterId: { type: 'string', description: 'Character ID (optional if saved in auth)' }
+      }
+    }
+  },
+  {
+    name: 'openrp_detach_behavior_from_character',
+    description: 'Detach a specific behavior attachment binding from a character.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        characterBehaviorId: { type: 'string', description: 'Binding ID of the character-behavior relationship to delete' }
+      },
+      required: ['characterBehaviorId']
+    }
+  },
+  {
+    name: 'openrp_list_character_group_behaviors',
+    description: 'List all behaviors attached to a character group (inherited by all member characters).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        groupId: { type: 'string', description: 'Character Group ID' }
+      },
+      required: ['groupId']
+    }
+  },
+  {
+    name: 'openrp_attach_behavior_to_character_group',
+    description: 'Attach a behavior graph to a character group so all members inherit and trigger it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        groupId: { type: 'string', description: 'Character Group ID' },
+        behaviorId: { type: 'string', description: 'Behavior ID to attach' },
+        config: { type: 'object', description: 'Optional configuration parameters' }
+      },
+      required: ['groupId', 'behaviorId']
+    }
+  },
+  {
+    name: 'openrp_detach_behavior_from_character_group',
+    description: 'Detach a behavior attachment binding from a character group.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        characterGroupBehaviorId: { type: 'string', description: 'Binding ID of the character-group-behavior relationship to delete' }
+      },
+      required: ['characterGroupBehaviorId']
     }
   },
 
@@ -1292,9 +1349,45 @@ async function handleToolCall(name, args = {}) {
 
     const payload = {
       behaviorId: b,
-      behaviorRegistryTagId: null
+      behaviorRegistryTagId: null,
+      config: args.config || {}
     };
     return makeRequest(`/api/v1/characters/${c}/behaviors`, { method: 'POST', body: payload });
+  }
+
+  if (name === 'openrp_list_character_behaviors') {
+    const c = args.characterId || authState.characterId;
+    if (!c) return { error: true, message: 'characterId is required' };
+    return makeRequest(`/api/v1/characters/${c}/behaviors`);
+  }
+
+  if (name === 'openrp_detach_behavior_from_character') {
+    const cbId = args.characterBehaviorId;
+    if (!cbId) return { error: true, message: 'characterBehaviorId is required' };
+    return makeRequest(`/api/v1/character-behaviors/${cbId}`, { method: 'DELETE' });
+  }
+
+  if (name === 'openrp_list_character_group_behaviors') {
+    const groupId = args.groupId || args.characterGroupId;
+    if (!groupId) return { error: true, message: 'groupId is required' };
+    return makeRequest(`/api/v1/character-groups/${groupId}/behaviors`);
+  }
+
+  if (name === 'openrp_attach_behavior_to_character_group') {
+    const groupId = args.groupId || args.characterGroupId;
+    const b = args.behaviorId;
+    if (!groupId || !b) return { error: true, message: 'groupId and behaviorId are required' };
+    const payload = {
+      behaviorId: b,
+      config: args.config || {}
+    };
+    return makeRequest(`/api/v1/character-groups/${groupId}/behaviors`, { method: 'POST', body: payload });
+  }
+
+  if (name === 'openrp_detach_behavior_from_character_group') {
+    const cgbId = args.characterGroupBehaviorId;
+    if (!cgbId) return { error: true, message: 'characterGroupBehaviorId is required' };
+    return makeRequest(`/api/v1/character-group-behaviors/${cgbId}`, { method: 'DELETE' });
   }
 
   // 7. TRACING & DEBUGGING

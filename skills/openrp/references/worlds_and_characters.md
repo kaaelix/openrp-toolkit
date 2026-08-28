@@ -146,24 +146,42 @@ Returns all active behavior bindings for the character, including resolved `conf
 ### Detach Behavior (`DELETE /api/v1/character-behaviors/{characterBehaviorId}`)
 Removes a specific behavior attachment by its binding ID.
 
+> [!IMPORTANT]
+> **Disabling Default Behavior (`openrp/behaviors/chat`) During Custom Development**:
+> By default, OpenRP attaches the standard `openrp/behaviors/chat` registry behavior. If you attach a custom behavior without detaching the default behavior, **both behaviors will trigger concurrently on every chat message**, resulting in double replies and token waste.
+> **Rule**: When testing or deploying a custom behavior DAG, always detach `openrp/behaviors/chat` from the character or character group.
+
 ---
 
 ## 6. Factions & Character Groups (`/character-groups`)
 
-Worlds can organize characters into hierarchical factions or groups:
+Worlds can organize characters into hierarchical factions or groups.
 
-### Create Character Group (`POST /api/v1/worlds/{worldId}/character-groups`)
-```json
-{
-  "name": "Astral Defenders League",
-  "handle": "astral-defenders",
-  "description": "Alliance of cosmic guardians defending the Astral Heart crystal.",
-  "autoAddMembers": true
-}
-```
+### Character Group Behavior Inheritance:
+> **"Behaviors attached directly to this character group. All member characters in this group will trigger these behaviors."**
 
-### List Character Groups (`GET /api/v1/worlds/{worldId}/character-groups`)
-Returns all factions and member associations.
+When a behavior is attached to a Character Group (`POST /api/v1/character-groups/{groupId}/behaviors`), all member characters automatically inherit and execute the behavior pipeline upon receiving chat messages.
+
+### Character Group Routes:
+* **List Groups**: `GET /api/v1/worlds/{worldId}/character-groups`
+* **Create Group**: `POST /api/v1/worlds/{worldId}/character-groups`
+  ```json
+  {
+    "name": "Astral Defenders League",
+    "handle": "astral-defenders",
+    "description": "Alliance of cosmic guardians defending the Astral Heart crystal.",
+    "autoAddMembers": true
+  }
+  ```
+* **List Group Behaviors**: `GET /api/v1/character-groups/{groupId}/behaviors`
+* **Attach Group Behavior**: `POST /api/v1/character-groups/{groupId}/behaviors`
+  ```json
+  {
+    "behaviorId": "01a04697-412b-718b-a31d-b770dd018f0b",
+    "config": { "ecoMode": true }
+  }
+  ```
+* **Detach Group Behavior**: `DELETE /api/v1/character-group-behaviors/{characterGroupBehaviorId}`
 
 ---
 
