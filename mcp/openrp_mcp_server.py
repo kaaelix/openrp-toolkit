@@ -637,6 +637,17 @@ TOOLS = [
 
     # 6. CHAT & GROUP ROOMS
     {
+        "name": "openrp_create_chat",
+        "description": "Create a new 1-on-1 chatroom or retrieve an existing chat session with a character.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "characterId": {"type": "string", "description": "Character ID to chat with (optional if saved in auth)"},
+                "tentative": {"type": "boolean", "description": "If true, returns existing active chat session if one already exists", "default": True}
+            }
+        }
+    },
+    {
         "name": "openrp_list_chats",
         "description": "List active chats, group chats, room participants, and session metadata.",
         "inputSchema": {"type": "object", "properties": {}}
@@ -1262,6 +1273,16 @@ def handle_tool_call(name, args):
         return make_request(f"/api/v1/characters/{c}/behaviors", method="POST", body=payload)
         
     # --- CHAT & GROUP ---
+    elif name == "openrp_create_chat":
+        c = args.get("characterId") or auth_state.get("characterId")
+        if not c:
+            return {"error": True, "message": "characterId is required"}
+        payload = {
+            "character_id": c,
+            "tentative": args.get("tentative", True)
+        }
+        return make_request("/api/chats", method="POST", body=payload)
+
     elif name == "openrp_list_chats":
         return make_request("/api/chats")
         

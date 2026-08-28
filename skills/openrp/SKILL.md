@@ -174,12 +174,12 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
 6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
 7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
-8. **Chat & Live Messaging** (4 tools): `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
+8. **Chat & Live Messaging** (5 tools): `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
 9. **Discovery, AI Models & Universal Gateway** (3 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`
 
 ---
 
-## 2. Complete 45 MCP Tools Reference Guide
+## 2. Complete 46 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
@@ -256,6 +256,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 ### Category 8: Chat & Live Messaging
 | Tool Name | Parameters | Purpose |
 |---|---|---|
+| `openrp_create_chat` | `characterId?`, `tentative?` | Creates a new 1-on-1 chat session or retrieves existing chat room with a character |
 | `openrp_list_chats` | `page?`, `limit?` | Lists active chat sessions and room participants |
 | `openrp_get_chat` | `chatId` | Retrieves detailed metadata, participants, model settings, and connected world for a chatroom |
 | `openrp_get_chat_messages` | `chatId`, `limit?` | Fetches conversation history from a chatroom |

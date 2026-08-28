@@ -408,7 +408,7 @@ async function runInstall() {
 
 function runList() {
   printBanner();
-  console.log('OpenRP Toolkit Catalog (45 MCP Tools & Documentation)\n');
+  console.log('OpenRP Toolkit Catalog (46 MCP Tools & Documentation)\n');
 
   const tools = [
     { cat: '1. Authentication & Profile', items: ['openrp_set_auth', 'openrp_refresh_token', 'openrp_get_me'] },
@@ -418,7 +418,7 @@ function runList() {
     { cat: '5. Prompt Template System', items: ['openrp_list_prompts', 'openrp_get_prompt', 'openrp_create_prompt', 'openrp_delete_prompt'] },
     { cat: '6. Behavior Pipeline Engine', items: ['openrp_list_behaviors', 'openrp_get_behavior', 'openrp_update_behavior', 'openrp_edit_behavior_node', 'openrp_deploy_behavior', 'openrp_delete_behavior', 'openrp_attach_behavior_to_character'] },
     { cat: '7. Tracing & Debugging', items: ['openrp_search_behavior_executions', 'openrp_get_behavior_execution', 'openrp_get_behavior_node_executions'] },
-    { cat: '8. Chat & Live Messaging', items: ['openrp_list_chats', 'openrp_get_chat', 'openrp_get_chat_messages', 'openrp_send_message'] },
+    { cat: '8. Chat & Live Messaging', items: ['openrp_create_chat', 'openrp_list_chats', 'openrp_get_chat', 'openrp_get_chat_messages', 'openrp_send_message'] },
     { cat: '9. Discovery & AI Models', items: ['openrp_list_models', 'openrp_discover_worlds', 'openrp_raw_api'] }
   ];
 

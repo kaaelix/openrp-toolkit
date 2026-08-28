@@ -20,7 +20,7 @@
 
 ## Key Capabilities
 
-* **45 Comprehensive MCP Tools**: Full operational coverage across 9 distinct domains (Auth, Worlds, Lorebooks & Exclusive Access, Characters, Character Groups, Prompts, Behaviors, Executions, Chats, and AI Foundation Models).
+* **46 Comprehensive MCP Tools**: Full operational coverage across 9 distinct domains (Auth, Worlds, Lorebooks & Exclusive Access, Characters, Character Groups, Prompts, Behaviors, Executions, Chats & Creation, and AI Foundation Models).
 * **Zero-Downtime Supabase Auto-Refresh**: Autonomous background token daemon that keeps sessions authenticated without manual re-login.
 * **Full 38-Node Behavior Engine Palette**: Support for all OpenRP node types (Events, AI Models, Control Flow, Storage, Utilities, Streaming, Try-Catch).
 * **Deterministic ReactFlow Sanitization**: Automatically normalizes edge IDs (`xy-edge__<source><sourceHandle>-<target><targetHandle>`) and viewport coordinates (X: 100-2400px) to prevent layout collapse.
