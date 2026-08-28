@@ -408,12 +408,12 @@ async function runInstall() {
 
 function runList() {
   printBanner();
-  console.log('OpenRP Toolkit Catalog (43 MCP Tools & Documentation)\n');
+  console.log('OpenRP Toolkit Catalog (45 MCP Tools & Documentation)\n');
 
   const tools = [
     { cat: '1. Authentication & Profile', items: ['openrp_set_auth', 'openrp_refresh_token', 'openrp_get_me'] },
     { cat: '2. World Management', items: ['openrp_list_my_worlds', 'openrp_get_world', 'openrp_create_world', 'openrp_update_world', 'openrp_update_world_readme', 'openrp_delete_world'] },
-    { cat: '3. Lorebook System', items: ['openrp_list_lores', 'openrp_get_lore', 'openrp_create_lore', 'openrp_update_lore', 'openrp_delete_lore'] },
+    { cat: '3. Lorebook System & Exclusive Access', items: ['openrp_list_lores', 'openrp_list_lore_characters', 'openrp_list_character_lores', 'openrp_get_lore', 'openrp_create_lore', 'openrp_update_lore', 'openrp_delete_lore'] },
     { cat: '4. Character Studio & Factions', items: ['openrp_list_characters', 'openrp_list_character_groups', 'openrp_create_character_group', 'openrp_delete_character_group', 'openrp_get_character', 'openrp_create_character', 'openrp_update_character', 'openrp_delete_character'] },
     { cat: '5. Prompt Template System', items: ['openrp_list_prompts', 'openrp_get_prompt', 'openrp_create_prompt', 'openrp_delete_prompt'] },
     { cat: '6. Behavior Pipeline Engine', items: ['openrp_list_behaviors', 'openrp_get_behavior', 'openrp_update_behavior', 'openrp_edit_behavior_node', 'openrp_deploy_behavior', 'openrp_delete_behavior', 'openrp_attach_behavior_to_character'] },

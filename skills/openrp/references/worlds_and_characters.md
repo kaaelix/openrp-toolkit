@@ -59,7 +59,12 @@ In addition to the world `readme`, individual factual entries are managed via `/
 - `title`: Subject title of the entry.
 - `handle`: Unique slug for graph referencing.
 - `content`: Explicit background details, rules, and constraints.
-- `isExclusive`: Boolean flag determining whether the entry applies only in specific context filters.
+- `isExclusive`: Boolean flag (`true`/`false`) determining whether the lore is confidential and exclusive to specific characters or vector RAG queries.
+
+### Exclusive Lore & Character Access:
+* When `isExclusive: true`, the lorebook entry is hidden from the general world lore context and is only supplied to assigned characters or triggered via targeted RAG searches.
+* **`openrp_list_lore_characters`** (`GET /api/users/{userId}/worlds/{worldId}/lore/{loreId}/characters`): Lists all characters that have access to this exclusive lore entry.
+* **`openrp_list_character_lores`** (`GET /api/users/{userId}/worlds/{worldId}/characters/{characterId}/lore`): Lists all exclusive and assigned lore entries that a specific character can access.
 
 ---
 

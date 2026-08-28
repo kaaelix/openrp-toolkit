@@ -339,6 +339,32 @@ TOOLS = [
             "required": ["loreId"]
         }
     },
+    {
+        "name": "openrp_list_lore_characters",
+        "description": "List all characters that have access to a specific exclusive lorebook entry.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "loreId": {"type": "string", "description": "Lore ID"}
+            },
+            "required": ["loreId"]
+        }
+    },
+    {
+        "name": "openrp_list_character_lores",
+        "description": "List all exclusive and assigned lorebook entries accessible by a character.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "userId": {"type": "string", "description": "User ID (optional if saved in auth)"},
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "characterId": {"type": "string", "description": "Character ID"}
+            },
+            "required": ["characterId"]
+        }
+    },
 
     # 4. CHARACTERS & PERSONAS
     {
@@ -958,6 +984,22 @@ def handle_tool_call(name, args):
         if not u or not w or not l:
             return {"error": True, "message": "userId, worldId, and loreId are required"}
         return make_request(f"/api/users/{u}/worlds/{w}/lore/{l}", method="DELETE")
+        
+    elif name == "openrp_list_lore_characters":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        l = args.get("loreId")
+        if not u or not w or not l:
+            return {"error": True, "message": "userId, worldId, and loreId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/lore/{l}/characters")
+        
+    elif name == "openrp_list_character_lores":
+        u = args.get("userId") or auth_state.get("userId")
+        w = args.get("worldId") or auth_state.get("worldId")
+        c = args.get("characterId") or auth_state.get("characterId")
+        if not u or not w or not c:
+            return {"error": True, "message": "userId, worldId, and characterId are required"}
+        return make_request(f"/api/users/{u}/worlds/{w}/characters/{c}/lore")
         
     # --- CHARACTERS ---
     elif name == "openrp_list_characters":

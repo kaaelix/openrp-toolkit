@@ -169,7 +169,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 
 1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
-3. **Lorebook System** (5 tools): `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
+3. **Lorebook System** (7 tools): `openrp_list_lores`, `openrp_list_lore_characters`, `openrp_list_character_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
 4. **Character Studio & Factions** (8 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
 6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
@@ -179,7 +179,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 
 ---
 
-## 2. Complete 43 MCP Tools Reference Guide
+## 2. Complete 45 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
@@ -204,12 +204,14 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 > - **`WORLD_VISIBILITY_UNLISTED`**: The same as public, for now.
 > - **`WORLD_VISIBILITY_PRIVATE`**: **Requires OpenRP Plus/Pro subscription** (`isPlus: true`). Free accounts attempting to set private visibility will receive a plan constraint error from the backend.
 
-### Category 3: Lorebook Management
+### Category 3: Lorebook Management & Exclusive Access
 | Tool Name | Parameters | Purpose |
 |---|---|---|
 | `openrp_list_lores` | `userId?`, `worldId?`, `page?`, `limit?` | Lists all lorebook entries and memory records in a world |
+| `openrp_list_lore_characters` | `userId?`, `worldId?`, `loreId` | Lists all characters that have access to a specific exclusive lore entry |
+| `openrp_list_character_lores` | `userId?`, `worldId?`, `characterId` | Lists all exclusive and assigned lore entries accessible by a character |
 | `openrp_get_lore` | `userId?`, `worldId?`, `loreId` | Retrieves specific lore title, handle, markdown content, and exclusive flags |
-| `openrp_create_lore` | `userId?`, `worldId?`, `title`, `handle`, `content`, `isExclusive?`, `tags?` | Creates a new factual lorebook entry |
+| `openrp_create_lore` | `userId?`, `worldId?`, `title`, `handle`, `content`, `isExclusive?`, `tags?` | Creates a new factual lorebook entry (`isExclusive: true/false`) |
 | `openrp_update_lore` | `userId?`, `worldId?`, `loreId`, `title?`, `content?`, `isExclusive?`, `tags?` | Updates an existing lorebook record |
 | `openrp_delete_lore` | `userId?`, `worldId?`, `loreId` | Permanently deletes a lorebook entry |
 
