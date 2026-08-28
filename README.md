@@ -332,8 +332,11 @@ openrp-toolkit/
 ├── LICENSE                            # MIT Open Source License
 ├── mcp/
 │   ├── server.js                      # Pure Node.js 47-Tool MCP JSON-RPC Server
-│   ├── openrp_mcp_server.py           # Python 3 fallback server
 │   └── mcp_config.example.json        # Example client configuration
+├── examples/                          # Pure Node.js code examples & runbooks
+│   ├── create_world_and_character.js
+│   ├── deploy_game_bot.js
+│   └── debug_behavior_execution.js
 ├── skills/
 │   └── openrp/
 │       ├── SKILL.md                   # AI Agent Skill Definition (Pure English)

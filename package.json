@@ -18,6 +18,7 @@
     "bin/",
     "mcp/",
     "skills/",
+    "examples/",
     "README.md",
     "LICENSE"
   ],
