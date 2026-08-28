@@ -704,10 +704,11 @@ const TOOLS = [
   // 7. TRACING & DEBUGGING
   {
     name: 'openrp_search_behavior_executions',
-    description: 'Search behavior execution history runs with optional status and chat filters.',
+    description: 'Search behavior execution history runs with optional status, chat filters, or direct IDs array.',
     inputSchema: {
       type: 'object',
       properties: {
+        ids: { type: 'array', items: { type: 'string' }, description: 'Array of Behavior Execution IDs to fetch directly (e.g. from message metadata behaviorExecutionIds)' },
         limit: { type: 'integer', description: 'Maximum runs to fetch', default: 20 },
         behaviorId: { type: 'string', description: 'Filter by Behavior ID' },
         chatId: { type: 'string', description: 'Filter by Chat ID' },
@@ -1299,6 +1300,7 @@ async function handleToolCall(name, args = {}) {
   // 7. TRACING & DEBUGGING
   if (name === 'openrp_search_behavior_executions') {
     const payload = {};
+    if (args.ids) payload.ids = Array.isArray(args.ids) ? args.ids : [args.ids];
     if (args.limit) payload.limit = args.limit;
     if (args.behaviorId) payload.behaviorId = args.behaviorId;
     if (args.chatId) payload.chatId = args.chatId;

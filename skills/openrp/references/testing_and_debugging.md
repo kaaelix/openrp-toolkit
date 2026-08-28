@@ -45,19 +45,37 @@ Behaviors can be tested directly within the visual editor without needing to ope
 
 AI agents and automated testing scripts can query and inspect behavior execution traces programmatically via MCP or REST:
 
-### A. List & Search Behavior Executions
+### A. List & Search Behavior Executions (By Behavior, Chat, or Direct IDs)
 * **MCP Tool**: `openrp_search_behavior_executions`
 * **REST Route**: `POST /api/v1/behavior-executions/search`
-* **Body**:
+* **Direct IDs Batch Query (From `ChatMessage.metadata.behaviorExecutionIds`)**:
+  ```json
+  {
+    "ids": [
+      "01a046aa-2ba8-72af-8ba4-c5cf556d5b2e",
+      "01a046aa-2bd2-7300-b7d5-941bc34c4472"
+    ]
+  }
+  ```
+* **Filter Query**:
   ```json
   {
     "limit": 10,
     "behaviorId": "01a042b9-c601-7107-bdf4-809118d53db2",
+    "chatId": "01a046a9-3e8e-7065-bf69-e04b8b4338b3",
     "status": "BEHAVIOR_EXECUTION_STATUS_COMPLETED"
   }
   ```
 
-### B. Retrieve Execution Summary
+### B. Message-to-Execution Tracing Workflow
+Every chat message returned by `GET /api/chats/{chatId}/messages` or `storage/get_chat_messages` contains a `metadata.behaviorExecutionIds` array:
+1. Extract execution IDs: `const executionIds = message.metadata.behaviorExecutionIds;`
+2. Fetch execution metadata & graph snapshots in batch:
+   `POST /api/v1/behavior-executions/search` with `{ "ids": executionIds }`
+3. Fetch full step-by-step node execution traces:
+   `GET /api/v1/behavior-executions/{executionId}/node-executions`
+
+### C. Retrieve Execution Summary
 * **MCP Tool**: `openrp_get_behavior_execution`
 * **REST Route**: `GET /api/v1/behavior-executions/{executionId}`
 * **Emits**: High-level execution status, started/finished timestamps, error codes, and graph snapshot.
