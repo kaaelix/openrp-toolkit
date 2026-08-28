@@ -102,18 +102,25 @@ When updating the `openrp` skill:
 6. **Keep information concise, structured, and easy to retrieve**: Use bullet points, code snippets, tables, and exact identifiers.
 7. **Security & Privacy**: Never store passwords, API keys, JWTs, cookies, access tokens, refresh tokens, or personal information.
 
-### 6. Debugging Protocol
-When an OpenRP-related problem occurs:
-1. Read the relevant `openrp` skill knowledge first.
-2. Inspect the actual error, logs, source code, requests, responses, and relevant implementation.
-3. Form evidence-based hypotheses.
-4. Test and investigate systematically.
-5. Identify the confirmed root cause whenever possible.
-6. Implement the correct solution.
-7. Verify that the solution works when possible.
-8. Automatically update the `openrp` skill with the reusable knowledge discovered.
+### 6. Mandatory Debugging & Verification-to-Completion Protocol
+When an OpenRP-related problem occurs or when modifying/testing any Behavior Graph:
+1. **Never Assume or Claim Success Without Evidence**: Never claim a fix or behavior is working based solely on deployment. You must verify actual runtime execution traces.
+2. **Execute Live Trigger**: Trigger the behavior via `POST /api/chats/{chatId}/messages` or test input.
+3. **Poll Execution Run Status**:
+   - Query `POST /api/v1/behavior-executions/search` with `{ "chatId": "...", "limit": 5 }` or `{ "ids": message.metadata.behaviorExecutionIds }`.
+   - If no execution appears within 2-3 seconds, verify character-world scoping and behavior binding attachment (`GET /api/v1/characters/{characterId}/behaviors`).
+4. **Inspect Failing Step Diagnostics**:
+   - If `status === "BEHAVIOR_EXECUTION_STATUS_FAILED"`, immediately call `GET /api/v1/behavior-executions/{executionId}/node-executions`.
+   - Find the exact failing node (`status === "BEHAVIOR_EXECUTION_STATUS_FAILED"`), parse the `output.error` Zod validation error or runtime stack trace.
+5. **Apply Graph Fix & Re-Deploy**:
+   - Correct the node schema, input property, JEXL expression, or edge handle IDs.
+   - Redeploy via `PUT /api/users/{userId}/worlds/{worldId}/behaviors/{behaviorId}`.
+6. **Re-Test & Poll Until COMPLETED**:
+   - Re-send test message and poll execution until `status === "BEHAVIOR_EXECUTION_STATUS_COMPLETED"`.
+   - Confirm all node iterations in `node-executions` have `status === "BEHAVIOR_EXECUTION_STATUS_COMPLETED"`.
+7. **Document the Diagnostic**: Automatically update the `openrp` skill references with the discovered root cause and fix pattern.
 
-*Do not consider meaningful OpenRP debugging fully complete until the relevant reusable knowledge has been added or updated in the `openrp` skill.*
+*Do not consider OpenRP debugging complete until the behavior execution status is confirmed as `BEHAVIOR_EXECUTION_STATUS_COMPLETED` in the runtime trace log and the reusable knowledge has been preserved in the skill.*
 
 ### 7. Autonomous Working Rules
 Be proactive and autonomous:
