@@ -506,40 +506,299 @@ function runList() {
   console.log('   ◇ references/architecture.md        PostgreSQL schema, Git mirroring, and vector embeddings\n');
 }
 
+const http = require('http');
+
+const SUPABASE_AUTH_URL = 'https://uixnaquqjhzcctyfoapf.supabase.co/auth/v1';
+const SUPABASE_ANON_KEY = 'sb_publishable_DN2mm7PLLgF2GEEd3bjZFw_T36rl4x0';
+
+function openBrowser(url) {
+  const plat = process.platform;
+  try {
+    if (plat === 'darwin') execSync(`open "${url}"`, { stdio: 'ignore' });
+    else if (plat === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
+    else execSync(`xdg-open "${url}" 2>/dev/null || termux-open-url "${url}" 2>/dev/null || true`, { stdio: 'ignore' });
+  } catch (e) {}
+}
+
+async function runLogin(cliEmail = null, cliPassword = null) {
+  printBanner();
+  console.log('◇  Direct OpenRP Email & Password Authentication\n');
+
+  const email = cliEmail || await prompt('   Email Address: ');
+  const password = cliPassword || await prompt('   Password: ');
+
+  if (!email || !password) {
+    console.error('❌ Email and password are required.');
+    return;
+  }
+
+  console.log('\n⏳ Authenticating with OpenRP via Supabase Auth API...');
+  try {
+    const res = await fetch(`${SUPABASE_AUTH_URL}/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.access_token) {
+      console.error('❌ Authentication failed:', data.error_description || data.msg || JSON.stringify(data));
+      return;
+    }
+
+    const token = data.access_token;
+    const refreshToken = data.refresh_token;
+    const authUid = data.user?.id;
+
+    console.log('✅ Access token & refresh token acquired!');
+    console.log('⏳ Resolving user profile and default worlds...');
+
+    // Fetch user profile from OpenRP API
+    let userAccount = {};
+    try {
+      const meRes = await fetch('https://openrp.ai/api/users/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      userAccount = (await meRes.json()).data || {};
+    } catch (e) {}
+
+    // Fetch first world
+    let worldId = '';
+    let characterId = '';
+    try {
+      const worldsRes = await fetch(`https://openrp.ai/api/users/${authUid}/worlds?limit=1`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const worldsData = (await worldsRes.json()).data;
+      const worlds = worldsData?.data || (Array.isArray(worldsData) ? worldsData : []);
+      if (worlds.length > 0) {
+        worldId = worlds[0].id;
+        // Fetch first character
+        const charsRes = await fetch(`https://openrp.ai/api/users/${authUid}/worlds/${worldId}/characters?limit=1`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const charsData = (await charsRes.json()).data;
+        const chars = charsData?.data || (Array.isArray(charsData) ? charsData : []);
+        if (chars.length > 0) characterId = chars[0].id;
+      }
+    } catch (e) {}
+
+    const authPayload = {
+      token,
+      refreshToken,
+      userId: authUid,
+      accountUserId: userAccount.id || authUid,
+      userName: userAccount.name || email,
+      worldId,
+      characterId,
+      expiresAt: data.expires_at || (Math.floor(Date.now() / 1000) + 3600)
+    };
+
+    fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+    fs.writeFileSync(AUTH_FILE, JSON.stringify(authPayload, null, 2), 'utf8');
+
+    console.log('\n┌───────────────────────────────────────────────────────────────┐');
+    console.log(`│ [SUCCESS] Logged in as: ${userAccount.name || email.padEnd(25)} │`);
+    console.log(`│ User Auth UID:   ${authUid} │`);
+    console.log(`│ Default World:   ${worldId || 'None (ready to create)'} │`);
+    console.log(`│ Saved config to: ~/.openrp_mcp_auth.json                     │`);
+    console.log('└───────────────────────────────────────────────────────────────┘\n');
+  } catch (err) {
+    console.error('❌ Network error during authentication:', err.message);
+  }
+}
+
+async function runWebLogin() {
+  printBanner();
+  console.log('◇  OpenRP Web Browser 1-Click Login (Local Callback Server)\n');
+
+  const PORT = 45678;
+  return new Promise((resolve) => {
+    const server = http.createServer(async (req, res) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
+      if (req.url === '/auth' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const payload = JSON.parse(body);
+            const token = payload.token || payload.access_token;
+            const refreshToken = payload.refreshToken || payload.refresh_token;
+
+            if (!token) throw new Error('No access_token found in payload');
+
+            // Resolve profile
+            let userAccount = {};
+            try {
+              const meRes = await fetch('https://openrp.ai/api/users/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              userAccount = (await meRes.json()).data || {};
+            } catch (e) {}
+
+            const authPayload = {
+              token,
+              refreshToken: refreshToken || '',
+              userId: payload.userId || userAccount.id || '',
+              worldId: payload.worldId || '',
+              characterId: payload.characterId || '',
+              expiresAt: Math.floor(Date.now() / 1000) + 3600
+            };
+
+            fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+            fs.writeFileSync(AUTH_FILE, JSON.stringify(authPayload, null, 2), 'utf8');
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'Authentication successful! You can close this window.' }));
+
+            console.log('\n[SUCCESS] Token captured from web browser!');
+            console.log('Credentials saved to ~/.openrp_mcp_auth.json\n');
+            server.close();
+            resolve();
+          } catch (err) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: true, message: err.message }));
+          }
+        });
+        return;
+      }
+
+      // Serve web receiver page
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OpenRP Toolkit Auth Receiver</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; max-width: 480px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h1 { font-size: 20px; color: #38bdf8; margin-top: 0; }
+    p { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+    button { background: #0ea5e9; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 15px; margin-top: 16px; }
+    button:hover { background: #0284c7; }
+    .status { margin-top: 16px; font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 OpenRP CLI Auth Receiver</h1>
+    <p>If you are logged into <b>OpenRP.ai</b> on this browser, click the button below to instantly sync your authentication session to your local CLI & MCP server.</p>
+    <button onclick="syncToken()">⚡ Auto-Sync Active Session to CLI</button>
+    <div id="status" class="status"></div>
+  </div>
+  <script>
+    async function syncToken() {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = '⏳ Reading cookies and syncing...';
+      try {
+        const cookies = document.cookie.split(';').reduce((res, c) => {
+          const [k, v] = c.trim().split('=');
+          if (k) res[k] = decodeURIComponent(v || '');
+          return res;
+        }, {});
+        
+        let token = '';
+        let refreshToken = '';
+        for (const k in cookies) {
+          if (k.includes('auth-token')) {
+            try {
+              const parsed = JSON.parse(cookies[k]);
+              if (Array.isArray(parsed)) {
+                token = parsed[0];
+                refreshToken = parsed[1];
+              } else if (parsed.access_token) {
+                token = parsed.access_token;
+                refreshToken = parsed.refresh_token;
+              }
+            } catch(e) {
+              token = cookies[k];
+            }
+          }
+        }
+
+        const res = await fetch('http://127.0.0.1:${PORT}/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, refreshToken })
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusDiv.innerHTML = '🎉 <b>Authentication Successful!</b> You may now close this tab.';
+        } else {
+          statusDiv.innerHTML = '❌ ' + (data.message || 'Sync failed');
+        }
+      } catch (err) {
+        statusDiv.innerHTML = '❌ Error: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>`);
+    });
+
+    server.listen(PORT, '127.0.0.1', () => {
+      const url = `http://127.0.0.1:${PORT}`;
+      console.log(`📡 Local auth receiver listening on: ${url}`);
+      console.log('🌐 Opening browser to authenticate...');
+      openBrowser(url);
+    });
+  });
+}
+
 async function runAuth() {
   printBanner();
   console.log('OpenRP Authentication Setup\n');
-  console.log('How to get your OpenRP credentials:');
-  console.log('1. Open your browser and navigate to https://openrp.ai');
-  console.log('2. Open Developer Tools (F12) -> Application -> Cookies');
-  console.log('3. Find "sb-uixnaquqjhzcctyfoapf-auth-token" and copy its values.\n');
+  console.log('Select Authentication Mode:');
+  console.log('   [1] Direct Email & Password Login (Recommended - Instant Auto-Token)');
+  console.log('   [2] Web Browser 1-Click Login (Localhost Callback Server)');
+  console.log('   [3] Manual Cookie / JWT Token Paste\n');
 
-  let currentAuth = {};
-  if (fs.existsSync(AUTH_FILE)) {
-    try {
-      currentAuth = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8'));
-    } catch {}
+  const mode = await prompt('   Choose option (1-3) [default: 1]: ');
+
+  if (mode === '2') {
+    await runWebLogin();
+    return;
+  } else if (mode === '3') {
+    let currentAuth = {};
+    if (fs.existsSync(AUTH_FILE)) {
+      try { currentAuth = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf8')); } catch {}
+    }
+
+    const token = await prompt(`JWT Access Token [${currentAuth.token ? 'configured' : 'none'}]: `);
+    const refreshToken = await prompt(`Supabase Refresh Token [${currentAuth.refreshToken ? 'configured' : 'none'}]: `);
+    const userId = await prompt(`User ID (UUID) [${currentAuth.userId || 'none'}]: `);
+    const worldId = await prompt(`Default World ID (UUID) [${currentAuth.worldId || 'none'}]: `);
+    const characterId = await prompt(`Default Character ID (UUID) [${currentAuth.characterId || 'none'}]: `);
+
+    const updatedAuth = {
+      token: token || currentAuth.token || '',
+      refreshToken: refreshToken || currentAuth.refreshToken || '',
+      userId: userId || currentAuth.userId || '',
+      worldId: worldId || currentAuth.worldId || '',
+      characterId: characterId || currentAuth.characterId || ''
+    };
+
+    fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
+    fs.writeFileSync(AUTH_FILE, JSON.stringify(updatedAuth, null, 2), 'utf8');
+
+    console.log('\n[SUCCESS] Authentication written to ' + AUTH_FILE.replace(os.homedir(), '~'));
+    console.log('Run "npx openrp-toolkit doctor" to verify your credentials.\n');
+  } else {
+    await runLogin();
   }
-
-  const token = await prompt(`JWT Access Token [${currentAuth.token ? 'configured' : 'none'}]: `);
-  const refreshToken = await prompt(`Supabase Refresh Token [${currentAuth.refreshToken ? 'configured' : 'none'}]: `);
-  const userId = await prompt(`User ID (UUID) [${currentAuth.userId || 'none'}]: `);
-  const worldId = await prompt(`Default World ID (UUID) [${currentAuth.worldId || 'none'}]: `);
-  const characterId = await prompt(`Default Character ID (UUID) [${currentAuth.characterId || 'none'}]: `);
-
-  const updatedAuth = {
-    token: token || currentAuth.token || '',
-    refreshToken: refreshToken || currentAuth.refreshToken || '',
-    userId: userId || currentAuth.userId || '',
-    worldId: worldId || currentAuth.worldId || '',
-    characterId: characterId || currentAuth.characterId || ''
-  };
-
-  fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
-  fs.writeFileSync(AUTH_FILE, JSON.stringify(updatedAuth, null, 2), 'utf8');
-
-  console.log('\n[SUCCESS] Authentication configuration written to ' + AUTH_FILE.replace(os.homedir(), '~'));
-  console.log('Run "npx openrp-toolkit doctor" to verify your credentials.\n');
 }
 
 async function runDoctor() {
@@ -729,6 +988,12 @@ switch (command) {
     break;
   case 'auth':
     runAuth();
+    break;
+  case 'login':
+    runLogin(args[1], args[2]);
+    break;
+  case 'web-login':
+    runWebLogin();
     break;
   case 'doctor':
     runDoctor();
