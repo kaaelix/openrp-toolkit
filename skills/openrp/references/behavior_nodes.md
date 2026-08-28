@@ -1,324 +1,127 @@
-# Behavior Nodes Specification
+# Behavior Nodes Specification & Port Wiring Reference
 
-## 1. Engine Execution Model
+## 1. Engine Execution Model & Topological Scheduling
 
-- Trigger: Every behavior pipeline starts execution from a single Event Node. Exactly one event node is allowed per graph.
-- Data Transport: Downstream nodes access upstream output payloads using Template Strings (`{{ nodeId.property }}`) or Expressions (`nodeId.property`).
-- State Variables: Persistent variables are defined via `storage/set_variable` and accessed globally during graph execution via `$variables.variableName` or `{{ $variables.variableName }}`.
-- Port Conventions:
-  - Standard linear flow: Output `next` -> Input `previous`
-  - Condition flow: Outputs `true`, `false` -> Input `previous`
-  - Condition merge: Outputs `next` -> Inputs `in1`, `in2` on `end_if`
-  - Parallel execution: Outputs `out1`, `out2`, ... on `split` -> Input `previous`
-  - Barrier synchronization: Outputs `next` -> Inputs `in1`, `in2`, ... on `sync`
-  - Loop iteration: Output `loopStart` -> Input `previous`, and Output `next` on last loop node -> Input `loopEnd`
-  - Loop exit: Output `next` on `repeat_until` -> Input `previous` on downstream node
-  - Error isolation: Outputs `success`, `error` -> Input `previous`
+- **Trigger**: Every behavior pipeline starts execution from a single Event Node (e.g. `events/chat_message`, `events/cron`). Exactly one event node is allowed per graph.
+- **Topological Traversal**: The OpenRP execution engine resolves nodes in directed acyclic graph (DAG) topological order. Downstream nodes are executed only after all upstream dependencies have resolved with status `BEHAVIOR_EXECUTION_STATUS_COMPLETED`.
+- **Data Transport**: Downstream nodes access upstream output payloads using Template Strings (`{{ nodeId.property }}`) or JEXL Expressions (`nodeId.property`).
+- **Global Variables**: Defined via `storage/set_variable` and accessed globally during graph execution via `$variables.variableName` or `{{ $variables.variableName }}`.
 
 ---
 
-## 2. Complete 37 Node Catalog
+## 2. Complete Port Handle & Edge Wiring Standard
+
+All ReactFlow edges in OpenRP MUST follow the strict edge ID format:
+`xy-edge__<sourceNodeId><sourceHandle>-<targetNodeId><targetHandle>`
+
+### Port Handle Name Reference Table:
+
+| Node Type | Allowed Source Handles (Outputs) | Allowed Target Handles (Inputs) | Description / Notes |
+| :--- | :--- | :--- | :--- |
+| **Standard Nodes** (AI, Storage, Utilities, Events) | `next` | `previous` | Standard linear pipeline flow. |
+| **`control_flow/if`** | `true`, `false` | `previous` | Branches based on boolean `condition`. |
+| **`control_flow/end_if`** | `next` | `in1`, `in2` | Merges branches from an `if` block. Requires `lcaNodeId`. |
+| **`control_flow/split`** | `out1`, `out2`, `out3`, `out4` | `previous` | Parallel branch splitting. Number of outputs matches `outputCount`. |
+| **`control_flow/sync`** | `next` | `in1`, `in2`, `in3`, `in4` | Barrier synchronization. Waits for all inputs to complete. Requires `lcaNodeId`. |
+| **`control_flow/repeat_until`** | `loopStart`, `next` | `previous`, `loopEnd` | Loop control. `loopStart` starts body; last node in body connects `next` -> `loopEnd`. `next` handle exits loop when condition is met. |
+| **`control_flow/try`** | `success`, `error` | `previous` | Error isolation boundary. Succeeded nodes flow from `success`; unhandled crashes route to `error`. |
+| **`control_flow/wait`** | `next` | `previous` | Pauses execution for `duration` milliseconds. |
+
+---
+
+## 3. Why Nodes Disconnect or Fail to Reach Downstream Nodes (The 5 Core Failure Modes)
+
+When designing or debugging Behavior Graphs in OpenRP, nodes frequently appear disconnected or unexecuted due to one of the following 5 root causes:
+
+### 🔴 Failure Mode 1: Edge Port Handle Typos & Mismatches
+* **Symptom**: Nodes are visibly linked in the canvas, but the engine ignores the link and terminates execution early.
+* **Root Cause**:
+  * Using `sourceHandle: "next"` on an `if` node (MUST be `true` or `false`).
+  * Using `sourceHandle: "output_0"` / `output_1` on a `split` node (MUST be `out1`, `out2`, `out3`).
+  * Using `targetHandle: "input_0"` / `input_1` on a `sync` node (MUST be `in1`, `in2`, `in3`).
+  * Using `sourceHandle: "next"` on `repeat_until` for the loop body (MUST be `sourceHandle: "loopStart"` and returned to `targetHandle: "loopEnd"`).
+  * Using `sourceHandle: "next"` on `control_flow/try` without handling `error`.
+
+### 🔴 Failure Mode 2: Missing `lcaNodeId` on Convergence Nodes (`sync` & `end_if`)
+* **Symptom**: The parallel or conditional branches run, but the `sync` or `end_if` node stays pending forever and never triggers downstream nodes.
+* **Root Cause**:
+  * In the OpenRP DAG scheduler, `control_flow/sync` and `control_flow/end_if` nodes **MUST specify `lcaNodeId`** pointing to the originating `control_flow/split` or `control_flow/if` node ID (e.g. `"lcaNodeId": "splitNode1"`).
+  * Without `lcaNodeId`, the barrier synchronization algorithm cannot evaluate if all parallel paths originated from the same ancestor, preventing the barrier from unlocking.
+
+### 🔴 Failure Mode 3: Upstream Unhandled Runtime Crash Halts Traversal
+* **Symptom**: Step 8 succeeds, but Step 9 and all downstream nodes never execute.
+* **Root Cause**:
+  * In OpenRP, if any node fails with status `BEHAVIOR_EXECUTION_STATUS_FAILED` (e.g., Zod validation error, invalid input type, missing required field), the execution engine **instantly halts all further DAG progression**.
+  * Downstream nodes are never reached.
+  * **Solution**: Wrap risky or fallible nodes (like external LLM calls or complex filters) inside a `control_flow/try` block with an active fallback route connected to the `error` handle.
+
+### 🔴 Failure Mode 4: JEXL Context Unwrapping & Undefined Expression Access
+* **Symptom**: Node throws `Expected type: array, but received: undefined` or `Invalid input`.
+* **Root Cause**:
+  * OpenRP auto-unwraps top-level `output.data` into the global expression scope for storage nodes.
+  * Accessing `getChat.data.participants.data` (with extra `.data.`) returns `undefined`.
+  * The correct path for `storage/get_chat` is `chat.participants.data` and `chat.messages.data.reverse()`.
+  * Passing `undefined` to strict Zod schemas causes the node to crash immediately, severing downstream flow.
+
+### 🔴 Failure Mode 5: Node Schema & Parameter Name Contract Mismatches
+* **Symptom**: Node throws Zod validation `invalid_type` or `missing_property`.
+* **Critical Invariants**:
+  1. `storage/update_typing_status`: Parameter MUST be **`participantId`** (NEVER `chatParticipantId`).
+  2. `storage/insert_chat_message`: Parameter MUST be **`chatParticipantId`** (NEVER `participantId`).
+  3. `storage/get_lores`: Parameter MUST include **`worldId`** (e.g. `worldId: { "$expression": "character.worldId" }`).
+  4. `ai/count_tokens`: Parameter MUST include **`tokenizer`** (e.g. `tokenizer: "TOKENIZER_LLAMA3"`).
+  5. `utilities/filter`: `itemCondition` MUST be `{ "$expression": "..." }`.
+  6. `utilities/map`: `itemTemplate` MUST be `{ "$template": "..." }` or `{ "$expression": "..." }` (NEVER `itemExpression`).
+  7. `utilities/join`: Output property is **`joinNode.text`** (NEVER `.string`).
+
+---
+
+## 4. Complete Node Catalog (39 Nodes)
 
 ### A. Events (2 Nodes)
-
-#### events/chat_message
-- Description: Triggered when a message is sent in an active chatroom containing this character.
-- Port: Output `next`
-- Output Payload:
-  - `chatId` (string, UUID): Identifier of the active chatroom.
-  - `messageId` (string, UUID): Identifier of the incoming message.
-
-#### events/cron
-- Description: Scheduled execution triggered on a CRON schedule.
-- Port: Output `next`
-- Configuration: `cronExpression` (string, standard 5-part cron syntax).
-- Output Payload: `timestamp` (string, ISO 8601).
-
----
+* `events/chat_message`: Output `next`. Output: `{ chatId, messageId }`.
+* `events/cron`: Output `next`. Config: `cronExpression`. Output: `{ timestamp }`.
 
 ### B. AI & Generation (8 Nodes)
-
-#### ai/llm
-- Description: Invokes an LLM to generate completions or structured JSON objects.
-- Ports: Input `previous` | Output `next`
-- Configuration Inputs:
-  - `modelId` (string, static or expression)
-  - `systemPrompt` (string, template supported)
-  - `temperature` (number, range: 0.0 to 2.0, default: 0.7)
-  - `jsonMode` (boolean, default: false)
-- Output Payload:
-  - `outputText` (string): Completion result.
-  - `finishReason` (string): "stop", "length", or "tool_calls".
-  - `usage` (object: promptTokens, completionTokens, totalTokens).
-
-#### ai/generate_embeddings
-- Description: Calls the AI embeddings API to generate a vector representation of the provided text content for semantic searches.
-- Ports: Input `previous` | Output `next`
-- Configuration Inputs:
-  - `content` (string, required): Text content to generate an embedding vector for.
-- Output Payload:
-  - `embedding` (number[]): Array of floating point numbers representing the embedding vector.
-
-#### ai/get_default_model
-- Description: Retrieves default active model configuration.
-- Ports: Input `previous` | Output `next`
-- Configuration Inputs:
-  - `preferredModelId` (string, optional): Specific model ID to prioritize if available.
-- Output Payload: `id` (string), `name` (string), `provider` (string), `contextWindow` (number).
-
-#### ai/get_model & ai/get_models
-- Description: Inspects specific model details or lists all available models.
-- Ports: Input `previous` | Output `next`
-- Inputs (`get_model`): `modelId` (string).
-- Output Payload: Model configuration objects including context windows and token limits.
-
-#### ai/count_tokens
-- Description: Computes exact token count of input text for a given tokenizer.
-- Ports: Input `previous` | Output `next`
-- Inputs: `text` (string), `tokenizer` (string, e.g. "cl100k_base").
-- Output Payload: `tokenCount` (number).
-
-#### ai/prune_text
-- Description: Truncates text to fit strictly within a specified token ceiling.
-- Ports: Input `previous` | Output `next`
-- Inputs: `text` (string), `maxTokens` (number), `tokenizer` (string).
-- Output Payload: `prunedText` (string).
-
-#### ai/read_llm_stream
-- Description: Sequentially consumes streaming chunks from an active LLM generation.
-- Ports: Input `previous` | Output `next`
-- Output Payload: `chunk` (string), `isFinished` (boolean).
-
----
+* `ai/llm`: Ports `previous` -> `next`. Inputs: `modelId`, `messages`, `stream`, `temperature`, `maxTokens`. Output: `{ outputText, finishReason, usage }`.
+* `ai/generate_embeddings`: Ports `previous` -> `next`. Input: `content`. Output: `{ embedding: number[] }`.
+* `ai/get_default_model`: Ports `previous` -> `next`. Output: `{ id, name, provider, tokenizer, contextWindow }`.
+* `ai/get_model`: Ports `previous` -> `next`. Input: `modelId`. Output: model details.
+* `ai/get_models`: Ports `previous` -> `next`. Output: list of models.
+* `ai/count_tokens`: Ports `previous` -> `next`. Inputs: `text`, `tokenizer`. Output: `{ tokenCount }`.
+* `ai/prune_text`: Ports `previous` -> `next`. Inputs: `text`, `maxTokens`, `tokenizer`. Output: `{ prunedText }`.
+* `ai/read_llm_stream`: Ports `previous` -> `next`. Output: `{ chunk, isFinished }`.
 
 ### C. Control Flow (7 Nodes)
+* `control_flow/if`: Input `previous`, Outputs `true`, `false`. Input: `condition`.
+* `control_flow/end_if`: Inputs `in1`, `in2`, Output `next`. Requires `lcaNodeId`.
+* `control_flow/split`: Input `previous`, Outputs `out1`, `out2`, ... Input: `outputCount`.
+* `control_flow/sync`: Inputs `in1`, `in2`, ..., Output `next`. Input: `inputCount`, Requires `lcaNodeId`.
+* `control_flow/repeat_until`: Inputs `previous`, `loopEnd`, Outputs `loopStart`, `next`. Input: `condition`.
+* `control_flow/try`: Input `previous`, Outputs `success`, `error`. Error isolation boundary.
+* `control_flow/wait`: Input `previous`, Output `next`. Input: `duration` (ms).
 
-#### control_flow/if
-- Description: Conditional branch evaluation routing to true or false paths.
-- Ports: Input `previous` | Outputs `true`, `false`
-- Inputs: `condition` (boolean expression).
+### D. Storage & Database (14 Nodes)
+* `storage/get_chat`: Input `previous`, Output `next`. Inputs: `chatId`, `expand` (`["participants", "messages"]`).
+* `storage/get_chat_message`: Input `previous`, Output `next`. Input: `messageId`.
+* `storage/get_chat_messages`: Input `previous`, Output `next`. Inputs: `chatId`, `limit`, `order`.
+* `storage/get_chat_participant`: Input `previous`, Output `next`. Input: `participantId`.
+* `storage/get_character`: Input `previous`, Output `next`. Input: `characterId`. Output: `{ id, name, personality, description, worldId }`.
+* `storage/get_characters`: Input `previous`, Output `next`. Input: `worldId`.
+* `storage/get_lores`: Input `previous`, Output `next`. Inputs: `worldId` (required), `limit`, `semanticQuery`. Output: `{ data: Lore[] }`.
+* `storage/insert_chat_message`: Input `previous`, Output `next`. Inputs: `chatId`, `chatParticipantId` (required), `content`.
+* `storage/update_typing_status`: Input `previous`, Output `next`. Inputs: `participantId` (required), `isTyping` (boolean).
+* `storage/broadcast_failed_chat_message`: Input `previous`, Output `next`. Inputs: `chatId`, `participantId`, `content`.
+* `storage/set_variable`: Input `previous`, Output `next`. Input: `variables: [{ key: { $template: "name" }, value: { $expression: "..." } }]`.
+* `storage/get_variable`: Input `previous`, Output `next`. Input: `key`.
+* `storage/delete_variable`: Input `previous`, Output `next`. Input: `key`.
 
-#### control_flow/end_if
-- Description: Merges execution branches originating from the same `if` node.
-- Ports: Inputs `in1`, `in2` | Output `next`
-
-#### control_flow/split
-- Description: Forks pipeline into multiple concurrent execution paths.
-- Ports: Input `previous` | Outputs `out1`, `out2`, `out3`, ...
-
-#### control_flow/sync
-- Description: Synchronization barrier that blocks until all parallel branches from a `split` node arrive.
-- Ports: Inputs `in1`, `in2`, ... | Output `next`
-
-#### control_flow/repeat_until
-- Description: While loop control node. Repeatedly executes body while condition is true.
-- Ports: Inputs `previous`, `loopEnd` | Outputs `loopStart`, `next`
-- Inputs: `condition` (boolean expression), `checkConditionBeforeRunning` (boolean).
-
-#### control_flow/wait
-- Description: Pauses execution for a designated duration.
-- Ports: Input `previous` | Output `next`
-- Inputs: `seconds` (number).
-
-#### control_flow/try
-- Description: Error boundary. Routes successful execution to `success` and caught errors to `error`.
-- Ports: Input `previous` | Outputs `success`, `error`
-
----
-
-### D. Storage & Memory (14 Nodes)
-
-#### storage/get_chat_message
-- Description: Retrieves message payload and author metadata.
-- Inputs: `messageId` (string), `expand` (array: ["attachments", "participant"]).
-- Outputs: `content` (string), `chatId` (string), `chatParticipantId` (string).
-
-#### storage/get_chat_messages
-- Description: Fetches paginated history for a chatroom.
-- Inputs: `chatId` (string), `limit` (integer), `startingAfter` / `endingBefore` (string).
-- Outputs: `data` (array of Message objects), `hasMore` (boolean).
-
-#### storage/get_chat
-- Description: Retrieves chatroom details and participant memberships.
-- Inputs: `chatId` (string), `expand` (array: ["participants", "messages"]).
-- Outputs: `id` (string), `title` (string), `participants` ({ data: [Participant] }).
-
-#### storage/get_chat_participant
-- Description: Retrieves participant identity records.
-- Inputs: `participantId` (string).
-- Outputs: `id` (string), `userId` (string | null), `characterId` (string | null).
-
-#### storage/get_character & storage/get_characters
-- Description: Retrieves character definitions and system prompts.
-- Outputs: `id`, `name`, `handle`, `personality`, `description`, `greetings`, `dialogs`.
-
-#### storage/get_character_memories
-- Description: Executes vector similarity search against a character's long-term memory store.
-- Inputs: `characterId` (string), `query` (string), `limit` (integer), `minConfidence` (number).
-- Outputs: `memories` (array of { content, similarity, createdAt }).
-
-#### storage/get_lore & storage/get_lores
-- Description: Retrieves world lore entries by identifier or semantic vector similarity.
-- Inputs (`get_lores`): `worldId` (string), `semanticQuery` (number[]), `limit` (integer), `enableFilters` (bool).
-- Outputs: `data` (array of { id, handle, title, content, isExclusive }).
-
-#### storage/set_variable
-- Description: Stores calculated variables into the graph state.
-- Inputs: Array of `{ key: string, value: { $expression | $template } }`.
-
-#### storage/get_variable
-- Description: Reads a variable from the graph state store.
-- Inputs: `variableName` (string).
-- Outputs: `value` (any).
-
-#### storage/insert_chat_message
-- Description: Emits a new message into the chatroom on behalf of a participant.
-- Inputs: `chatId` (string), `content` (string, template), `chatParticipantId` (string).
-- Outputs: `insertedMessageId` (string).
-
-#### storage/update_typing_status
-- Description: Toggles the typing indicator animation in the chatroom UI.
-- Inputs: `chatParticipantId` (string), `isTyping` (boolean).
-
-#### storage/broadcast_failed_chat_message
-- Description: Emits a non-persisted error alert in the chat UI.
-- Inputs: `chatId` (string), `message` (string), `errorCode` (string).
-
----
-
-### E. Utilities (7 Nodes)
-
-#### utilities/filter
-- Description: Filters an array with a predicate expression.
-- Inputs: `list` (array expression), `itemCondition` (JEXL string, e.g. `item.userId === null`).
-- Outputs: `list` (filtered array).
-
-#### utilities/map
-- Description: Transforms each element in an array.
-- Inputs: `list` (array), `itemExpression` (JEXL expression, e.g. `item.name`).
-- Outputs: `list` (transformed array).
-
-#### utilities/append
-- Description: Appends an item or concatenates arrays.
-- Inputs: `list` (array), `item` (any).
-- Outputs: `list` (updated array).
-
-#### utilities/join & utilities/string_split
-- Description: Converts an array to a delimited string, or splits a string into an array.
-- Inputs (`join`): `list` (array), `separator` (string).
-- Inputs (`string_split`): `string` (string), `separator` (string).
-
-#### utilities/http_request
-- Description: Dispatches an external HTTP request (GET, POST, PUT, DELETE). Timeout: 30 seconds.
-- Inputs: `url` (string), `method` (string), `headers` (object), `body` (object/string).
-- Outputs: `statusCode` (number), `data` (parsed payload), `headers` (object).
-
-#### utilities/comment
-- Description: Non-executing visual annotation on the editor canvas.
-- Inputs: `text` (string).
-
----
-
-## 3. Expression Rules & JEXL Syntax
-
-### Allowed Constructs:
-- String operations: `str.toLowerCase()`, `str.trim()`, `str.substring(start, length)`, `str.indexOf('token')`, `str.replace('old', 'new')`
-- Array operations: `arr.length`, `arr[0]`, `['val1', 'val2'].indexOf(target) !== -1`
-- Ternary logic: `condition ? ifTrue : ifFalse`
-- Logical comparisons: `&&`, `||`, `!`, `===`, `!==`, `>`, `<`, `>=`, `<=`
-
-### Parser Constraint:
-Regular expression literals (`/[1-9]/`) are not supported by the JEXL parser and will throw a fatal syntax error. Use standard chained `.indexOf()` methods instead:
-
-```javascript
-// Correct sequential check:
-input.indexOf('1') !== -1 ? '1' : input.indexOf('2') !== -1 ? '2' : 'none'
-```
-
----
-
-## 4. Visual Canvas Layout & Geometry Standard
-
-To ensure behavior graphs are clean, human-readable, and well-organized on the OpenRP ReactFlow editor viewport:
-
-```
-Column 0 (Trigger)   Column 1 (Fork/Sync)   Column 2 (Storage)   Column 3 (AI/Logic)   Column 4 (Output)
-(X = 100)            (X = 360)              (X = 640)            (X = 920)             (X = 1200)
-
-[chat_message]
-      │
-[get_chat_message]
-      │
-[get_chat] ────────> [split]
-                       ├──> [filter] ──> [get_participant] ──┐
-                       └──> [filter] ──> [get_character]   ──┼──> [sync] ──> [llm] ──> [insert_message]
-```
-
-### Layout Coordinates Guide:
-- **Base Grid Unit**: Column step $\Delta X = 220\text{px} - 260\text{px}$, Row step $\Delta Y = 130\text{px} - 150\text{px}$.
-- **Sequential Nodes**: Increment $Y$ downwards for tight stages, then step $X$ right for major transitions.
-- **Branch Symmetry**: Keep parallel branches equidistant from the centerline ($Y \pm 140\text{px}$).
-- **Loop Positioning**: Place loop bodies directly offset above or below the controller node ($Y \pm 140\text{px}$).
-
----
-
-## 5. Topological Continuity & Disconnection Repair
-
-### Common Disconnection Causes & Fixes:
-1. **Missing Edge Handle Prefix**:
-   * *Problem*: Edge ID is defined as `"e1"` instead of `"xy-edge__<source><sourceHandle>-<target><targetHandle>"`.
-   * *Fix*: Always prefix with `xy-edge__` followed by exact source and target port handles.
-2. **Dangling Branch Nodes**:
-   * *Problem*: The `false` branch of an `if` node or the `error` branch of a `try` node has no outgoing connection.
-   * *Fix*: Route the branch to an `end_if` / merge barrier or terminate with a dedicated notification/toast node.
-3. **Loop Body Disconnection**:
-   * *Problem*: A `repeat_until` node connects to a loop body, but the end of the loop body does not route back to `loopEnd`.
-   * *Fix*: Connect the final node inside the loop body with `sourceHandle: "next"` to `targetHandle: "loopEnd"` on the `repeat_until` node.
-4. **Parallel Branch Orphan**:
-   * *Problem*: A `split` node branches out to multiple paths, but one path is missing a connection to `sync.inX`.
-   * *Fix*: Ensure every output port (`out1`, `out2`, ...) on `split` has a corresponding input port (`in1`, `in2`, ...) on `sync` with `lcaNodeId` configured.
-
----
-
-## 7. Zero-LLM Deterministic Game Engine Pattern
-
-OpenRP allows building 100% deterministic interactive games (such as Tic-Tac-Toe, Rock-Paper-Scissors, Dice Duels, Trivia, and RPG combat engines) **completely without LLM generation nodes**, achieving sub-100ms response times and zero token consumption.
-
-### Zero-LLM Pipeline Blueprint:
-```
-[chat_message]
-      │
-[get_chat_message]
-      │
-[get_chat] ───────────────────────────> [split (outputCount: 2)]
-                                          ├── (out1) ──> [filter (User)] ──> [get_chat_participant] ──┐
-                                          └── (out2) ──> [filter (Bot)]  ──> [update_typing: true] ───┼──> [sync]
-                                                                                                        │
-                                                                                              [get_chat_messages (limit: 10)]
-                                                                                                        │
-                                                                                              [filter (bot messages)]
-                                                                                                        │
-                                                                                              [set_variable (parse state & game rules)]
-                                                                                                        │
-                                                                                              [wait: 1s]
-                                                                                                        │
-                                                                                              [insert_chat_message (state & board)]
-                                                                                                        │
-                                                                                              [update_typing: false]
-```
-
-### Key Technical Rules for Zero-LLM Engines:
-1. **`set_variable` Key-Value Objects**:
-   - `key` **MUST** be defined as an object: `{ "$template": "variableName" }`.
-   - `value` **MUST** be an expression `{ "$expression": "..." }` or template `{ "$template": "..." }`.
-2. **State Serialization in Message Links**:
-   - To maintain state across turns without an external database, serialize the board state into invisible or appended Markdown links (e.g. `[ ](https://openrp.ai/game?state={{ $variables.stateCode }})`).
-   - On the next turn, `get_chat_messages` retrieves the last bot message, parses the state with `.split('?state=')[1].substring(0, 9)`, and applies the player's next move.
-3. **Dynamic Visual Assets**:
-   - Dynamic game boards can be rendered by binding SVG/Canvas generator URLs to Markdown images: `![]({{ $variables.boardImgUrl }})`.
-
-
-
-
-
-
+### E. Utilities (8 Nodes)
+* `utilities/filter`: Ports `previous` -> `next`. Inputs: `list`, `itemCondition: { "$expression": "..." }`. Output: `{ list }`.
+* `utilities/map`: Ports `previous` -> `next`. Inputs: `list`, `itemTemplate: { "$template": "..." }` or `{ "$expression": "..." }`. Output: `{ list }`.
+* `utilities/join`: Ports `previous` -> `next`. Inputs: `list`, `separator`. Output: `{ text }` (NEVER `.string`).
+* `utilities/string_split`: Ports `previous` -> `next`. Inputs: `text`, `separator`. Output: `{ array }`.
+* `utilities/append`: Ports `previous` -> `next`. Inputs: `list`, `item`. Output: `{ list }`.
+* `utilities/slice`: Ports `previous` -> `next`. Inputs: `list`, `start`, `end`. Output: `{ list }`.
+* `utilities/merge`: Ports `previous` -> `next`. Inputs: `list1`, `list2`. Output: `{ list }`.
+* `utilities/length`: Ports `previous` -> `next`. Input: `list`. Output: `{ length }`.

@@ -5,6 +5,10 @@
 *.auth.json
 *.tmp
 *.bak
+*.payload.json
+*_payload.json
+scratch/
+scratch_*
 
 # Python byte code
 __pycache__/

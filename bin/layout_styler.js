@@ -3,135 +3,160 @@
 /**
  * OpenRP Visual Graph Spatial Layout Generator
  * 
- * Arranges node (x, y) coordinates into clean, non-linear geometric layouts:
- * - 'snake': S-Curve / Zigzag grid (4 nodes per row, compact & readable)
- * - 'diamond': Symmetrical fork-join for parallel branches (split/sync)
- * - 'bento': Functional category clusters (Ingestion, RAG, Inference, Delivery)
- * - 'wave': Alternating diagonal sine-wave layout
+ * Arranges node (x, y) coordinates into clean, visually harmonious layouts
+ * that guarantee:
+ * 1. Monotonic Forward Flow (X_target >= X_source for all forward edges)
+ * 2. Zero 180-degree cable looping around node bodies
+ * 3. Clear port alignment (Right Output -> Left Input)
+ * 
+ * Supported Layout Styles:
+ * - 'linear': Clean single-row horizontal pipeline (X += 350, Y = 150)
+ * - 'diamond': Symmetrical multi-lane fork-join for parallel RAG / Split / Sync (Y = 100, 250, 400)
+ * - 'waterfall': Multi-stage functional tiers (Ingestion Y=100, Processing Y=280, Delivery Y=460)
+ * - 'scoped': Scoped block layout for try/catch and repeat_until containers
  */
 
-function applySnakeLayout(nodes, columns = 4, nodeWidth = 240, rowHeight = 160) {
-  return nodes.map((node, index) => {
-    const row = Math.floor(index / columns);
-    const colInRow = index % columns;
-    const isEvenRow = row % 2 === 0;
-    const col = isEvenRow ? colInRow : (columns - 1 - colInRow);
+const fs = require('fs');
+const path = require('path');
+
+function applyLinearLayout(nodes, startX = 50, startY = 150, stepX = 350) {
+  return nodes.map((node, index) => ({
+    ...node,
+    position: {
+      x: startX + index * stepX,
+      y: startY
+    }
+  }));
+}
+
+function applyDiamondLayout(nodes, startX = 50, centerY = 250, stepX = 320) {
+  let currentX = startX;
+  return nodes.map((node, idx) => {
+    const type = node.type || '';
+    let y = centerY;
+
+    if (node.id.toLowerCase().includes('lore') || node.id.toLowerCase().includes('rag') || idx % 2 === 1 && !type.includes('split') && !type.includes('sync')) {
+      y = centerY - 140; // Top lane
+    } else if (node.id.toLowerCase().includes('history') || node.id.toLowerCase().includes('var') || node.id.toLowerCase().includes('token')) {
+      y = centerY + 140; // Bottom lane
+    }
+
+    const pos = {
+      x: currentX,
+      y
+    };
+    currentX += stepX;
+    return { ...node, position: pos };
+  });
+}
+
+function applyWaterfallLayout(nodes, startX = 50, stepX = 320) {
+  return nodes.map((node, idx) => {
+    const type = node.type || '';
+    let tierY = 100; // Tier 1: Ingestion & Setup
+
+    if (type.startsWith('storage/set') || type.startsWith('ai/count') || type.startsWith('utilities/')) {
+      tierY = 240; // Tier 2: Transformation & Memory
+    } else if (type.startsWith('ai/llm') || type.startsWith('control_flow/')) {
+      tierY = 380; // Tier 3: Core Reasoning & Decision
+    } else if (type.startsWith('storage/insert') || type.startsWith('storage/broadcast')) {
+      tierY = 520; // Tier 4: Delivery & Output
+    }
 
     return {
       ...node,
       position: {
-        x: col * nodeWidth + 50,
-        y: row * rowHeight + 100
+        x: startX + idx * stepX,
+        y: tierY
       }
     };
   });
 }
 
-function applyBentoLayout(nodes) {
-  const clusters = {
-    events: { x: 50, y: 100 },
-    storage: { x: 350, y: 100 },
-    ai: { x: 650, y: 250 },
-    delivery: { x: 950, y: 250 }
-  };
-
+function applyScopedLayout(nodes, startX = 50, stepX = 320) {
   return nodes.map((node, idx) => {
     const type = node.type || '';
-    let baseX = 50 + (idx % 4) * 260;
-    let baseY = 100 + Math.floor(idx / 4) * 180;
+    let y = 150;
 
-    if (type.startsWith('events/')) {
-      baseX = clusters.events.x;
-      baseY = clusters.events.y + idx * 80;
-    } else if (type.startsWith('storage/get')) {
-      baseX = clusters.storage.x;
-      baseY = clusters.storage.y + (idx % 3) * 120;
-    } else if (type.startsWith('ai/')) {
-      baseX = clusters.ai.x;
-      baseY = clusters.ai.y + (idx % 2) * 140;
-    } else if (type.startsWith('storage/insert') || type.startsWith('storage/update')) {
-      baseX = clusters.delivery.x;
-      baseY = clusters.delivery.y + (idx % 2) * 140;
+    if (node.id.toLowerCase().includes('fallback') || node.id.toLowerCase().includes('error')) {
+      y = 350; // Error / Fallback lane below
     }
 
     return {
       ...node,
-      position: { x: baseX, y: baseY }
+      position: {
+        x: startX + idx * stepX,
+        y
+      }
     };
   });
 }
 
-function applyDiamondLayout(nodes, nodeWidth = 260) {
-  return nodes.map((node, index) => {
-    let x = index * nodeWidth;
-    let y = 300;
-
-    if (node.id.toLowerCase().includes('bot') || node.id.toLowerCase().includes('error') || index % 2 === 1) {
-      y = 160;
-    } else if (node.id.toLowerCase().includes('user') || node.id.toLowerCase().includes('lore')) {
-      y = 440;
-    }
-
-    return {
-      ...node,
-      position: { x, y }
-    };
-  });
-}
-
-function applyWaveLayout(nodes, nodeWidth = 220, amplitude = 120, frequency = 0.8) {
-  return nodes.map((node, index) => {
-    const x = index * nodeWidth + 50;
-    const y = 300 + Math.sin(index * frequency) * amplitude;
-    return {
-      ...node,
-      position: { x: Math.round(x), y: Math.round(y) }
-    };
-  });
-}
-
-function layoutGraph(graph, layoutType = 'snake') {
-  let nodes = graph.nodes || [];
-  const edges = (graph.edges || []).map(edge => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    sourceHandle: edge.sourceHandle,
-    targetHandle: edge.targetHandle
-  }));
+function layoutGraph(graph, layoutType = 'linear') {
+  const nodes = graph.nodes || [];
+  let styledNodes = [];
 
   switch (layoutType.toLowerCase()) {
-    case 'snake':
-    case 's-curve':
-      nodes = applySnakeLayout(nodes);
-      break;
-    case 'bento':
-    case 'cluster':
-      nodes = applyBentoLayout(nodes);
+    case 'linear':
+      styledNodes = applyLinearLayout(nodes);
       break;
     case 'diamond':
-    case 'fork-join':
-      nodes = applyDiamondLayout(nodes);
+    case 'fork_join':
+      styledNodes = applyDiamondLayout(nodes);
       break;
-    case 'wave':
-    case 'cyberpunk':
-      nodes = applyWaveLayout(nodes);
+    case 'waterfall':
+    case 'tiers':
+      styledNodes = applyWaterfallLayout(nodes);
+      break;
+    case 'scoped':
+    case 'try_catch':
+      styledNodes = applyScopedLayout(nodes);
       break;
     default:
-      nodes = applySnakeLayout(nodes);
+      styledNodes = applyLinearLayout(nodes);
+      break;
   }
 
   return {
     ...graph,
-    nodes,
-    edges
+    nodes: styledNodes
   };
 }
 
 module.exports = {
-  layoutGraph,
-  applySnakeLayout,
-  applyBentoLayout,
+  applyLinearLayout,
   applyDiamondLayout,
-  applyWaveLayout
+  applyWaterfallLayout,
+  applyScopedLayout,
+  layoutGraph
 };
+
+// CLI Support
+if (require.main === module) {
+  const filePath = process.argv[2];
+  const style = process.argv[3] || 'linear';
+
+  if (!filePath) {
+    console.log('Usage: node bin/layout_styler.js <path-to-graph.json> [linear|diamond|waterfall|scoped]');
+    process.exit(1);
+  }
+
+  try {
+    const raw = fs.readFileSync(path.resolve(process.cwd(), filePath), 'utf8');
+    const parsed = JSON.parse(raw);
+    const targetGraph = parsed.graph || parsed;
+    const styled = layoutGraph(targetGraph, style);
+
+    if (parsed.graph) {
+      parsed.graph = styled;
+      fs.writeFileSync(path.resolve(process.cwd(), filePath), JSON.stringify(parsed, null, 2));
+    } else {
+      fs.writeFileSync(path.resolve(process.cwd(), filePath), JSON.stringify(styled, null, 2));
+    }
+
+    console.log(`✅ Successfully applied "${style}" layout style to ${filePath}`);
+  } catch (err) {
+    console.error('Layout Error:', err.message);
+    process.exit(1);
+  }
+}

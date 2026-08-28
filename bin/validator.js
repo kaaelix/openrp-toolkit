@@ -135,10 +135,17 @@ function validateBehaviorGraph(graph) {
       }
     }
 
-    // Zod Schema Check: storage/insert_chat_message & update_typing_status
-    if (node.type === 'storage/insert_chat_message' || node.type === 'storage/update_typing_status') {
+    // Zod Schema Check: storage/insert_chat_message
+    if (node.type === 'storage/insert_chat_message') {
       if (node.data?.participantId && !node.data?.chatParticipantId) {
-        issues.errors.push(`Node "${node.id}" (${node.type}) uses participantId. In OpenRP, the parameter MUST be chatParticipantId.`);
+        issues.errors.push(`Node "${node.id}" (storage/insert_chat_message) uses participantId. In OpenRP, insert_chat_message MUST use chatParticipantId.`);
+      }
+    }
+
+    // Zod Schema Check: storage/update_typing_status
+    if (node.type === 'storage/update_typing_status') {
+      if (node.data?.chatParticipantId && !node.data?.participantId) {
+        issues.errors.push(`Node "${node.id}" (storage/update_typing_status) uses chatParticipantId. In OpenRP, update_typing_status MUST use participantId.`);
       }
     }
 

@@ -1,8 +1,8 @@
 # OpenRP Developer Toolkit & Model Context Protocol (MCP) Server
 
-[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.1.0-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
+[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.1.5-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Standard%202024--11--05-7C4DFF?style=for-the-badge)](https://modelcontextprotocol.io)
-[![npm version](https://img.shields.io/badge/npm-v1.1.0-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
+[![npm version](https://img.shields.io/badge/npm-v1.1.5-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-kaaelix-FF4081?style=for-the-badge)](https://github.com/kaaelix)
@@ -13,8 +13,8 @@
 ---
 
 > [!NOTE]
-> **Community Release Notice (v1.1.0)**:
-> Version `1.1.0` introduces complete coverage for all 37 OpenRP Behavior nodes, automated static graph validation (`validator.js`), dynamic Eco-Mode token management (78%–100% token savings), Vector RAG memory retrieval, structured LLM JSON mode, and zero-LLM deterministic state machine blueprints.
+> **Community Release Notice (v1.1.5)**:
+> Version `1.1.5` introduces complete coverage for all 37 OpenRP Behavior nodes, automated static graph validation (`validator.js`), dynamic Eco-Mode token management (78%–100% token savings), Vector RAG memory retrieval, structured LLM JSON mode, and zero-LLM deterministic state machine blueprints.
 > If you encounter any bugs or have feature suggestions, please file an issue or contribute directly on GitHub:
 > **https://github.com/kaaelix/openrp-toolkit**
 

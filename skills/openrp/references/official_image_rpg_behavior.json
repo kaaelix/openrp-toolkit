@@ -1,0 +1,350 @@
+{
+  "name": "OpenRP Official Multimodal Image & RPG Story Generation",
+  "handle": "official-multimodal-image-rpg-v1",
+  "graph": {
+    "nodes": [
+      {
+        "id": "chatMessage",
+        "type": "events/chat_message",
+        "position": {
+          "x": 0,
+          "y": 150
+        },
+        "data": {
+          "customFields": []
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "getChatMessage",
+        "type": "storage/get_chat_message",
+        "position": {
+          "x": 350,
+          "y": 150
+        },
+        "data": {
+          "messageId": {
+            "$expression": "chatMessage.messageId"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "chat",
+        "type": "storage/get_chat",
+        "position": {
+          "x": 700,
+          "y": 150
+        },
+        "data": {
+          "chatId": {
+            "$expression": "chatMessage.chatId"
+          },
+          "expand": [
+            "participants",
+            "messages"
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "filterBot",
+        "type": "utilities/filter",
+        "position": {
+          "x": 1050,
+          "y": 150
+        },
+        "data": {
+          "list": {
+            "$expression": "chat.participants.data"
+          },
+          "itemCondition": {
+            "$expression": "item.userId === null && item.characterId !== null"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "startTyping",
+        "type": "storage/update_typing_status",
+        "position": {
+          "x": 1400,
+          "y": 150
+        },
+        "data": {
+          "participantId": {
+            "$expression": "filterBot.list[0].id"
+          },
+          "isTyping": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "character",
+        "type": "storage/get_character",
+        "position": {
+          "x": 1750,
+          "y": 150
+        },
+        "data": {
+          "characterId": {
+            "$expression": "filterBot.list[0].characterId"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "lores",
+        "type": "storage/get_lores",
+        "position": {
+          "x": 2100,
+          "y": 150
+        },
+        "data": {
+          "worldId": {
+            "$expression": "character.worldId"
+          },
+          "limit": 3
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "mapHistory",
+        "type": "utilities/map",
+        "position": {
+          "x": 2450,
+          "y": 150
+        },
+        "data": {
+          "list": {
+            "$expression": "chat.messages.data.reverse()"
+          },
+          "itemTemplate": {
+            "$template": "{{ item.participant ? item.participant.name : 'Adventurer' }}: {{ item.content }}"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "joinHistory",
+        "type": "utilities/join",
+        "position": {
+          "x": 2800,
+          "y": 150
+        },
+        "data": {
+          "list": {
+            "$expression": "mapHistory.list"
+          },
+          "separator": "\n"
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "countTokens",
+        "type": "ai/count_tokens",
+        "position": {
+          "x": 3150,
+          "y": 150
+        },
+        "data": {
+          "text": {
+            "$expression": "joinHistory.text"
+          },
+          "tokenizer": "TOKENIZER_LLAMA3"
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "generateVisualScenePrompt",
+        "type": "ai/llm",
+        "position": {
+          "x": 3500,
+          "y": 150
+        },
+        "data": {
+          "modelId": {
+            "$expression": "chatMessage.modelSettings?.chatModelId || '64ffc716-89a3-456e-9a95-ef4095f7d781'"
+          },
+          "stream": false,
+          "temperature": 0.5,
+          "maxTokens": 200,
+          "messages": [
+            {
+              "role": "system",
+              "content": {
+                "$template": "You are a master digital art director. Convert the character's setting and the player's latest action into a concise 1-sentence English AI image generation prompt (Flux/Midjourney style). Output ONLY the raw descriptive prompt keywords, nothing else."
+              }
+            },
+            {
+              "role": "user",
+              "content": {
+                "$template": "Character: {{ character.name }}, {{ character.shortDescription }}.\nPlayer Action: {{ getChatMessage.content }}\nGenerate 1-sentence art prompt:"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "generateStoryWithVisuals",
+        "type": "ai/llm",
+        "position": {
+          "x": 3850,
+          "y": 150
+        },
+        "data": {
+          "modelId": {
+            "$expression": "chatMessage.modelSettings?.chatModelId || '64ffc716-89a3-456e-9a95-ef4095f7d781'"
+          },
+          "stream": false,
+          "temperature": 0.7,
+          "maxTokens": 2000,
+          "messages": [
+            {
+              "role": "system",
+              "content": {
+                "$template": "You are {{ character.name }}, Archon of Aetheria.\nPersonality: {{ character.personality }}\n\nDirectives:\n1. Respond in deep, immersive fantasy roleplay in Indonesian.\n2. In your response, embed this visual scene artwork at the beginning:\n![Aetheria Celestial Vista](https://image.pollinations.ai/prompt/{{ encodeURIComponent(generateVisualScenePrompt.outputText) }}?width=1024&height=1024&nologo=true&enhance=true)\n3. Follow up with dramatic, majestic story dialogue reacting to the player's action."
+              }
+            },
+            {
+              "role": "user",
+              "content": {
+                "$template": "Dialogue History:\n{{ joinHistory.text }}\n\nPlayer: {{ getChatMessage.content }}\n\nNarrate the response with the embedded illustration:"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "insertReply",
+        "type": "storage/insert_chat_message",
+        "position": {
+          "x": 4200,
+          "y": 150
+        },
+        "data": {
+          "chatId": {
+            "$expression": "chatMessage.chatId"
+          },
+          "chatParticipantId": {
+            "$expression": "filterBot.list[0].id"
+          },
+          "content": {
+            "$expression": "generateStoryWithVisuals.outputText"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "stopTyping",
+        "type": "storage/update_typing_status",
+        "position": {
+          "x": 4550,
+          "y": 150
+        },
+        "data": {
+          "participantId": {
+            "$expression": "filterBot.list[0].id"
+          },
+          "isTyping": false
+        },
+        "lcaNodeId": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "xy-edge__chatMessagenext-getChatMessageprevious",
+        "source": "chatMessage",
+        "target": "getChatMessage",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__getChatMessagenext-chatprevious",
+        "source": "getChatMessage",
+        "target": "chat",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__chatnext-filterBotprevious",
+        "source": "chat",
+        "target": "filterBot",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__filterBotnext-startTypingprevious",
+        "source": "filterBot",
+        "target": "startTyping",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__startTypingnext-characterprevious",
+        "source": "startTyping",
+        "target": "character",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__characternext-loresprevious",
+        "source": "character",
+        "target": "lores",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__loresnext-mapHistoryprevious",
+        "source": "lores",
+        "target": "mapHistory",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__mapHistorynext-joinHistoryprevious",
+        "source": "mapHistory",
+        "target": "joinHistory",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__joinHistorynext-countTokensprevious",
+        "source": "joinHistory",
+        "target": "countTokens",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__countTokensnext-generateVisualScenePromptprevious",
+        "source": "countTokens",
+        "target": "generateVisualScenePrompt",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__generateVisualScenePromptnext-generateStoryWithVisualsprevious",
+        "source": "generateVisualScenePrompt",
+        "target": "generateStoryWithVisuals",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__generateStoryWithVisualsnext-insertReplyprevious",
+        "source": "generateStoryWithVisuals",
+        "target": "insertReply",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__insertReplynext-stopTypingprevious",
+        "source": "insertReply",
+        "target": "stopTyping",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      }
+    ]
+  }
+}

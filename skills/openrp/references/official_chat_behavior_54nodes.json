@@ -1,0 +1,1436 @@
+{
+  "executionId": "01a046ad-f8e9-7265-b28a-48266360e82f",
+  "behaviorId": null,
+  "name": "OpenRP Official Default Streaming RAG Chat Behavior",
+  "nodesCount": 54,
+  "edgesCount": 62,
+  "graph": {
+    "nodes": [
+      {
+        "id": "chatMessage",
+        "type": "events/chat_message",
+        "position": {
+          "x": -100,
+          "y": 300
+        },
+        "data": {
+          "testInput": "{\n  \"chatId\": \"01a004ef-f876-7258-9527-e563f6b54d41\"\n}",
+          "customFields": [
+            {
+              "name": "prompt",
+              "type": "string",
+              "description": "Custom prompt template for this character",
+              "defaultValue": "You are {{replyingCharacter.name}}, a character in a roleplay. Write your next response in a chat with: {{userParticipant.roleplayProfile?.name ?? userParticipant.user.name}}.\n\n<instructions>\n- Only respond as {{replyingCharacter.name}}.\n- Always react in {{replyingCharacter.name}}'s voice and personality.\n- Write your messages using markdown, with actions between asterisks: *action*.\n- Reference the data under <characters> when talking about you or other characters.\n- Reference the data under <lorebooks> for world lore and background.\n- Reference the data under <referenced_characters> for characters mentioned in the world.\n- You must follow the conversation and not change topics.\n</instructions>\n\nCharacters:\n<characters>\n  <character id=\"{{replyingCharacter.handle}}\">\n    <name>\n      {{replyingCharacter.name}}\n    </name>\n    <description>\n      {{replyingCharacter.description}}\n    </description>\n    <status>\n      {{replyingCharacter.status}}\n    </status>\n    <personality>\n      {{replyingCharacter.personality}}\n    </personality>\n    {{replyingCharacter.dialogs ? (\"<example_dialogs>\\n\" + replyingCharacter.dialogs.join(\"\\n\") + \"\\n</example_dialogs>\") : \"\"}}\n  </character>\n  <character id=\"{{userParticipant.user.handle}}\">\n    <name>\n      {{userParticipant.roleplayProfile?.name ?? userParticipant.user.name}}\n    </name>\n    <description>\n      {{userParticipant.roleplayProfile?.description ?? userParticipant.user.bio}}\n    </description>\n  </character>\n{{referencedCharacters.text}}\n</characters>\n\n{{chat.scenario ? \"<scenario>\\n\" + chat.scenario + \"\\n</scenario>\" : \"\"}}\n\n{{referencedLore.text ? \"<lorebooks>\\n\" + referencedLore.text + \"\\n</lorebooks>\" : \"\"}}"
+            },
+            {
+              "name": "useFullDescription",
+              "type": "boolean",
+              "description": "Whether to always use full character descriptions instead of short descriptions.",
+              "defaultValue": true
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "chat",
+        "type": "storage/get_chat",
+        "position": {
+          "x": 0,
+          "y": 300
+        },
+        "data": {
+          "chatId": {
+            "$expression": "chatMessage.chatId"
+          },
+          "expand": [
+            "participants",
+            "messages"
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "filterReplyingParticipant",
+        "type": "utilities/filter",
+        "position": {
+          "x": 200,
+          "y": 300
+        },
+        "data": {
+          "list": {
+            "$expression": "chat.participants.data"
+          },
+          "comment": "This filters which character should be replying by assuming that this is a 1:1 chat and fetches the chat participant with no userId.",
+          "itemCondition": {
+            "$expression": "item.userId === null && item.characterId !== null"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "replyingCharacter",
+        "type": "storage/get_character",
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "data": {
+          "characterId": {
+            "$expression": "filterReplyingParticipant.list[0].characterId"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setTypingTrue",
+        "type": "storage/update_typing_status",
+        "position": {
+          "x": 400,
+          "y": 300
+        },
+        "data": {
+          "isTyping": true,
+          "participantId": {
+            "$expression": "filterReplyingParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "mapScanMessages",
+        "type": "utilities/map",
+        "position": {
+          "x": 400,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "chat.messages.data.reverse()"
+          },
+          "comment": "Construct chat context by processing the latest messages of the chat.",
+          "itemTemplate": {
+            "$template": "{{item.participantId === userParticipant.id ? (userParticipant.roleplayProfile?.name ?? userParticipant.user.name) : chat.participants.data.find(p => item.participantId === p.id)?.name ?? \"Unknown\"}}: {{item.content}}"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "joinScanMessages",
+        "type": "utilities/join",
+        "position": {
+          "x": 500,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "mapScanMessages.list"
+          },
+          "comment": "",
+          "separator": {
+            "$template": "\n\n"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "generateEmbedding",
+        "type": "ai/generate_embeddings",
+        "position": {
+          "x": 600,
+          "y": 200
+        },
+        "data": {
+          "comment": "Transform chat context into a high-dimensional vector.",
+          "content": {
+            "$template": "{{joinScanMessages.text}}"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "fetchSplit",
+        "type": "control_flow/split",
+        "position": {
+          "x": 900,
+          "y": 300
+        },
+        "data": {
+          "outputCount": 2
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "getReferencedCharacters",
+        "type": "storage/get_characters",
+        "position": {
+          "x": 1000,
+          "y": 200
+        },
+        "data": {
+          "limit": 5,
+          "worldId": {
+            "$expression": "replyingCharacter.worldId"
+          },
+          "nameValue": {
+            "$template": ""
+          },
+          "handleValue": {
+            "$template": ""
+          },
+          "nameOperator": "ilike",
+          "enableFilters": true,
+          "minConfidence": 0.5,
+          "semanticQuery": {
+            "$expression": "generateEmbedding.embedding"
+          },
+          "handleOperator": "eq",
+          "descriptionValue": {
+            "$template": ""
+          },
+          "descriptionOperator": "ilike"
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "filtereReferencedCharacters",
+        "type": "utilities/filter",
+        "position": {
+          "x": 1100,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "getReferencedCharacters.data"
+          },
+          "comment": "Remove replying character from referenced characters since we will always insert replying character's definition.",
+          "itemCondition": {
+            "$expression": "item.id !== replyingCharacter.id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "getReferencedLores",
+        "type": "storage/get_lores",
+        "position": {
+          "x": 1000,
+          "y": 400
+        },
+        "data": {
+          "limit": 5,
+          "worldId": {
+            "$expression": "replyingCharacter.worldId"
+          },
+          "titleValue": {
+            "$template": ""
+          },
+          "characterId": {
+            "$expression": "replyingCharacter.id"
+          },
+          "handleValue": {
+            "$template": ""
+          },
+          "contentValue": {
+            "$template": ""
+          },
+          "enableFilters": true,
+          "minConfidence": 0.5,
+          "semanticQuery": {
+            "$expression": "generateEmbedding.embedding"
+          },
+          "titleOperator": "ilike",
+          "handleOperator": "eq",
+          "contentOperator": "ilike"
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "getDefaultModel",
+        "type": "ai/get_default_model",
+        "position": {
+          "x": 400,
+          "y": 400
+        },
+        "data": {
+          "preferredModelId": {
+            "$expression": "chatMessage.modelSettings?.chatModelId"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "fetchSync",
+        "type": "control_flow/sync",
+        "position": {
+          "x": 1400,
+          "y": 300
+        },
+        "data": {
+          "inputCount": 2
+        },
+        "lcaNodeId": "fetchSplit"
+      },
+      {
+        "id": "llm",
+        "type": "ai/llm",
+        "position": {
+          "x": 2100,
+          "y": 200
+        },
+        "data": {
+          "stream": true,
+          "modelId": {
+            "$expression": "getDefaultModel.id"
+          },
+          "messages": {
+            "$expression": "appendPromptMessages.list"
+          },
+          "maxTokens": {
+            "$expression": "chatMessage.modelSettings?.outputTokens || 2000"
+          },
+          "temperature": {
+            "$expression": "chatMessage.modelSettings?.temperature ?? 0.8"
+          },
+          "responseSchema": {
+            "$template": ""
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setSentParagraphs",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 2200,
+          "y": 200
+        },
+        "data": {
+          "variables": [
+            {
+              "key": {
+                "$template": "sentParagraphs"
+              },
+              "value": {
+                "$expression": "0"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "repeatUntilStreamDone",
+        "type": "control_flow/repeat_until",
+        "position": {
+          "x": 2300,
+          "y": 200
+        },
+        "data": {
+          "expression": {
+            "$expression": "!readLlmStream?.isFinished"
+          },
+          "checkConditionBeforeRunning": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "readLlmStream",
+        "type": "ai/read_llm_stream",
+        "position": {
+          "x": 2200,
+          "y": 100
+        },
+        "data": {
+          "streamKey": {
+            "$expression": "llm.streamKey"
+          },
+          "blockUntilNewInput": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "splitParagraphs",
+        "type": "utilities/string_split",
+        "position": {
+          "x": 2300,
+          "y": 100
+        },
+        "data": {
+          "text": {
+            "$template": "{{readLlmStream.snapshot.choices[0].message.content || \"\"}}"
+          },
+          "separator": {
+            "$template": "\n\n"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "repeatUntilParagraphsSent",
+        "type": "control_flow/repeat_until",
+        "position": {
+          "x": 2400,
+          "y": 100
+        },
+        "data": {
+          "expression": {
+            "$expression": "splitParagraphs.array.length > ($variables.sentParagraphs + (readLlmStream.isFinished ? 0 : 1))"
+          },
+          "checkConditionBeforeRunning": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "insertChatMessage",
+        "type": "storage/insert_chat_message",
+        "position": {
+          "x": 2300,
+          "y": 0
+        },
+        "data": {
+          "chatId": {
+            "$expression": "chatMessage.chatId"
+          },
+          "content": {
+            "$template": "{{splitParagraphs.array[$variables.sentParagraphs]}}"
+          },
+          "chatParticipantId": {
+            "$expression": "filterReplyingParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "incrementSentParagraphs",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 2400,
+          "y": 0
+        },
+        "data": {
+          "variables": [
+            {
+              "key": {
+                "$template": "sentParagraphs"
+              },
+              "value": {
+                "$expression": "$variables.sentParagraphs + 1"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "waitParagraph",
+        "type": "control_flow/wait",
+        "position": {
+          "x": 2500,
+          "y": 0
+        },
+        "data": {
+          "seconds": 1
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setTypingFalse",
+        "type": "storage/update_typing_status",
+        "position": {
+          "x": 2300,
+          "y": 300
+        },
+        "data": {
+          "isTyping": false,
+          "participantId": {
+            "$expression": "filterReplyingParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "split",
+        "type": "control_flow/split",
+        "position": {
+          "x": 100,
+          "y": 300
+        },
+        "data": {
+          "outputCount": 3
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "sync",
+        "type": "control_flow/sync",
+        "position": {
+          "x": 700,
+          "y": 300
+        },
+        "data": {
+          "inputCount": 3
+        },
+        "lcaNodeId": "split"
+      },
+      {
+        "id": "pruneSystemPrompt",
+        "type": "ai/prune_text",
+        "position": {
+          "x": 1500,
+          "y": 300
+        },
+        "data": {
+          "text": {
+            "$template": "{{chatMessage.config.prompt}}"
+          },
+          "comment": "System prompt takes up no more than 60% of the entire token budget.",
+          "direction": "end",
+          "maxTokens": {
+            "$expression": "(chatMessage.modelSettings?.inputTokens || 2000) * 0.6"
+          },
+          "tokenizer": {
+            "$template": "{{getDefaultModel.tokenizer}}"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "repeatUntilTokenBudgetFilled",
+        "type": "control_flow/repeat_until",
+        "position": {
+          "x": 1800,
+          "y": 300
+        },
+        "data": {
+          "comment": "Fill the remaining 40% of token budget with chat history. Keep fetching until we run out of token budget or there are no more history to fetch.\n\nInstead of checking token budget directly, we check whether messageBatchCount is > 0 because we will repeatedly lower this (until it becomes 0) when we attempt to squeeze in messages into our chat history context.",
+          "expression": {
+            "$expression": "$variables.messageBatchCount > 0 && getChatHistory?.hasMore"
+          },
+          "checkConditionBeforeRunning": false
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setRemainingTokenBudget",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1600,
+          "y": 300
+        },
+        "data": {
+          "comment": "",
+          "variables": [
+            {
+              "key": {
+                "$template": "remainingTokenBudget"
+              },
+              "value": {
+                "$expression": "(chatMessage.modelSettings?.inputTokens ?? 2000) - pruneSystemPrompt.tokenCount"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "getChatHistory",
+        "type": "storage/get_chat_messages",
+        "position": {
+          "x": 1600,
+          "y": 200
+        },
+        "data": {
+          "limit": 50,
+          "chatId": {
+            "$expression": "chat.id"
+          },
+          "expand": [
+            "attachments"
+          ],
+          "comment": "Fetch history in batches of 50 to fill token budget.",
+          "endingBefore": {
+            "$expression": ""
+          },
+          "startingAfter": {
+            "$expression": "$variables.chatHistoryCursor"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "repeatUntilChatHistoryProcessed",
+        "type": "control_flow/repeat_until",
+        "position": {
+          "x": 1800,
+          "y": 200
+        },
+        "data": {
+          "comment": "Here we check whether messageBatchCount is > 0 because we will repeatedly lower this (until it becomes 0) when we attempt to squeeze in messages into our chat history context.",
+          "expression": {
+            "$expression": "$variables.messageBatchCount > 0 && $variables.nextProcessingIndex < getChatHistory.data.length"
+          },
+          "checkConditionBeforeRunning": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "countTokens",
+        "type": "ai/count_tokens",
+        "position": {
+          "x": 1600,
+          "y": 100
+        },
+        "data": {
+          "text": {
+            "$template": "{{$variables.processingChatMessages.map(message => message.content).join(\"\\n\")}}"
+          },
+          "comment": "Count the text portion of the message. ",
+          "tokenizer": {
+            "$template": "{{getDefaultModel.tokenizer}}"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "calculateTokenCost",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1700,
+          "y": 100
+        },
+        "data": {
+          "comment": "We calculate the token cost for the messages. Here we look at the length of attachments from all the messages, which we assume are photos for now, and estimate that they take up 250 tokens each.",
+          "variables": [
+            {
+              "key": {
+                "$template": "messagesTokenCost"
+              },
+              "value": {
+                "$expression": "countTokens.count + $variables.processingChatMessages.map(message => message.attachments?.data?.length || 0).reduce((total, current) => total + current, 0) * 250"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "if",
+        "type": "control_flow/if",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "data": {
+          "expression": {
+            "$expression": "$variables.remainingTokenBudget >= $variables.messagesTokenCost"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "endIf",
+        "type": "control_flow/end_if",
+        "position": {
+          "x": 2100,
+          "y": 100
+        },
+        "data": {},
+        "lcaNodeId": null
+      },
+      {
+        "id": "appendChatHistory",
+        "type": "utilities/append",
+        "position": {
+          "x": 1900,
+          "y": 0
+        },
+        "data": {
+          "item": {
+            "$expression": "$variables.processingChatMessages.map(\n  item => {\n    role: \"user\",\n    content: item.content,\n    attachments: item.attachments.data\n})"
+          },
+          "list": {
+            "$expression": "appendChatHistory?.list || []"
+          },
+          "comment": "Add messages to the list of chat history that we will send into the LLM as context, starting from an empty list.",
+          "concatenate": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "appendPromptMessages",
+        "type": "utilities/append",
+        "position": {
+          "x": 1900,
+          "y": 300
+        },
+        "data": {
+          "item": {
+            "$expression": "(appendChatHistory?.list || []).reverse()"
+          },
+          "list": [
+            {
+              "$expression": "{\n  role: \"system\",\n  content: pruneSystemPrompt.prunedText\n}"
+            }
+          ],
+          "comment": "Assemble the full prompt from the user supplied prompt and chat history. Note chat history is latest chat first, so we reverse it here.",
+          "concatenate": true
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "userParticipant",
+        "type": "storage/get_chat_participant",
+        "position": {
+          "x": 300,
+          "y": 200
+        },
+        "data": {
+          "expand": [
+            "roleplayProfile",
+            "user"
+          ],
+          "participantId": {
+            "$expression": "filterUserParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "filterUserParticipant",
+        "type": "utilities/filter",
+        "position": {
+          "x": 200,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "chat.participants.data"
+          },
+          "comment": "This filters the user assuming that this is a 1:1 chat.",
+          "itemCondition": {
+            "$expression": "item.userId !== null"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "mapReferencedCharacters",
+        "type": "utilities/map",
+        "position": {
+          "x": 1200,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "filtereReferencedCharacters.list"
+          },
+          "itemTemplate": {
+            "$template": "  <character id=\"{{item.handle}}\">\n    <name>\n      {{item.name}}\n    </name>\n    <description>\n      {{chatMessage.config.useFullDescription ? item.description : item.shortDescription}}\n    </description>\n  </character>"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "referencedCharacters",
+        "type": "utilities/join",
+        "position": {
+          "x": 1300,
+          "y": 200
+        },
+        "data": {
+          "list": {
+            "$expression": "mapReferencedCharacters.list"
+          },
+          "separator": {
+            "$template": "\n"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "mapReferencedLore",
+        "type": "utilities/map",
+        "position": {
+          "x": 1200,
+          "y": 400
+        },
+        "data": {
+          "list": {
+            "$expression": "getReferencedLores.data"
+          },
+          "itemTemplate": {
+            "$template": "  <lorebook>\n    <title>\n      {{item.title}}\n    </title>\n    <content>\n      {{item.content}}\n    </content>\n  </lorebook>"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "referencedLore",
+        "type": "utilities/join",
+        "position": {
+          "x": 1300,
+          "y": 400
+        },
+        "data": {
+          "list": {
+            "$expression": "mapReferencedLore.list"
+          },
+          "separator": {
+            "$template": "\n"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setChatHistoryCursor",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1900,
+          "y": 200
+        },
+        "data": {
+          "variables": [
+            {
+              "key": {
+                "$template": "chatHistoryCursor"
+              },
+              "value": {
+                "$expression": "getChatHistory.data.at(-1)?.id"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setProcessingChatMessages",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1500,
+          "y": 100
+        },
+        "data": {
+          "comment": "Grab the messages to process. Chat history is fetched in descending order (latest messages first).",
+          "variables": [
+            {
+              "key": {
+                "$template": "processingChatMessages"
+              },
+              "value": {
+                "$expression": "getChatHistory.data.slice($variables.nextProcessingIndex, $variables.nextProcessingIndex + $variables.messageBatchCount)"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setMessageBatchCount",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1900,
+          "y": 100
+        },
+        "data": {
+          "comment": "If we went over the limit, attempt to lower message batch count.",
+          "variables": [
+            {
+              "key": {
+                "$template": "messageBatchCount"
+              },
+              "value": {
+                "$expression": "Math.floor($variables.messageBatchCount / 2)"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "setNextProcessingIndex",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 2000,
+          "y": 0
+        },
+        "data": {
+          "comment": "If we successfully appended the messages, increment nextProcessingIndex to match.",
+          "variables": [
+            {
+              "key": {
+                "$template": "nextProcessingIndex"
+              },
+              "value": {
+                "$expression": "$variables.nextProcessingIndex + $variables.processingChatMessages.length"
+              }
+            },
+            {
+              "key": {
+                "$template": "remainingTokenBudget"
+              },
+              "value": {
+                "$expression": "$variables.remainingTokenBudget - $variables.messagesTokenCost"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "initializeNextProcessingIndex",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1700,
+          "y": 200
+        },
+        "data": {
+          "variables": [
+            {
+              "key": {
+                "$template": "nextProcessingIndex"
+              },
+              "value": {
+                "$expression": "0"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "initializeMessageBatchCount",
+        "type": "storage/set_variable",
+        "position": {
+          "x": 1700,
+          "y": 300
+        },
+        "data": {
+          "comment": "For messageBatchCount, the idea is that we batch multiple messages and send them into Count Tokens node instead of sending messages one at a time. We then cap this by the max get chat messages count (50).",
+          "variables": [
+            {
+              "key": {
+                "$template": "messageBatchCount"
+              },
+              "value": {
+                "$expression": "Math.min(Math.ceil($variables.remainingTokenBudget / 500), 50)"
+              }
+            }
+          ]
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "wait",
+        "type": "control_flow/wait",
+        "position": {
+          "x": 2500,
+          "y": 100
+        },
+        "data": {
+          "seconds": 5
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "try",
+        "type": "control_flow/try",
+        "position": {
+          "x": 2200,
+          "y": 300
+        },
+        "data": {},
+        "lcaNodeId": null
+      },
+      {
+        "id": "broadcastFailedChatMessage",
+        "type": "storage/broadcast_failed_chat_message",
+        "position": {
+          "x": 2400,
+          "y": 400
+        },
+        "data": {
+          "code": {
+            "$template": "{{try.error.code}}"
+          },
+          "chatId": {
+            "$expression": "chatMessage.chatId"
+          },
+          "participantId": {
+            "$expression": "filterReplyingParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "updateTypingStatus",
+        "type": "storage/update_typing_status",
+        "position": {
+          "x": 2300,
+          "y": 400
+        },
+        "data": {
+          "isTyping": false,
+          "participantId": {
+            "$expression": "filterReplyingParticipant.list[0].id"
+          }
+        },
+        "lcaNodeId": null
+      },
+      {
+        "id": "user",
+        "type": "storage/get_variable",
+        "position": {
+          "x": 800,
+          "y": 300
+        },
+        "data": {
+          "key": {
+            "$template": "user"
+          },
+          "comment": "This node exposes the user's name to legacy prompts expecting {{user}}.",
+          "defaultValue": {
+            "$expression": "userParticipant.roleplayProfile?.name ?? userParticipant.user.name"
+          }
+        },
+        "lcaNodeId": null
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge__mapScanMessages-joinScanMessages",
+        "source": "mapScanMessages",
+        "target": "joinScanMessages",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__joinScanMessages-generateEmbedding",
+        "source": "joinScanMessages",
+        "target": "generateEmbedding",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__fetchSplit-getRefCharacters",
+        "source": "fetchSplit",
+        "target": "getReferencedCharacters",
+        "sourceHandle": "out1",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__getRefCharacters-filterRefCharacters",
+        "source": "getReferencedCharacters",
+        "target": "filtereReferencedCharacters",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__fetchSplit-getLores",
+        "source": "fetchSplit",
+        "target": "getReferencedLores",
+        "sourceHandle": "out2",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__llm-setSentParagraphs",
+        "source": "llm",
+        "target": "setSentParagraphs",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__setSentParagraphs-repeatUntilStreamDone",
+        "source": "setSentParagraphs",
+        "target": "repeatUntilStreamDone",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__readLlmStream-splitParagraphs",
+        "source": "readLlmStream",
+        "target": "splitParagraphs",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__repeatUntilParagraphsSent-insertChatMessage",
+        "source": "repeatUntilParagraphsSent",
+        "target": "insertChatMessage",
+        "sourceHandle": "loopStart",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__insertChatMessage-incrementSentParagraphs",
+        "source": "insertChatMessage",
+        "target": "incrementSentParagraphs",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__incrementSentParagraphs-waitParagraph",
+        "source": "incrementSentParagraphs",
+        "target": "waitParagraph",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "edge__waitParagraph-repeatUntilParagraphsSent",
+        "source": "waitParagraph",
+        "target": "repeatUntilParagraphsSent",
+        "sourceHandle": "next",
+        "targetHandle": "loopEnd"
+      },
+      {
+        "id": "xy-edge__splitout2-filterReplyingParticipantprevious",
+        "source": "split",
+        "target": "filterReplyingParticipant",
+        "sourceHandle": "out2",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__generateEmbeddingnext-syncin1",
+        "source": "generateEmbedding",
+        "target": "sync",
+        "sourceHandle": "next",
+        "targetHandle": "in1"
+      },
+      {
+        "id": "xy-edge__chatMessagenext-getChatprevious",
+        "source": "chatMessage",
+        "target": "chat",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__getChatnext-splitprevious",
+        "source": "chat",
+        "target": "split",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__fetchSyncnext-pruneTextprevious",
+        "source": "fetchSync",
+        "target": "pruneSystemPrompt",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__pruneSystemPromptnext-setVariableprevious",
+        "source": "pruneSystemPrompt",
+        "target": "setRemainingTokenBudget",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__getReplyingCharacternext-syncin2",
+        "source": "replyingCharacter",
+        "target": "sync",
+        "sourceHandle": "next",
+        "targetHandle": "in2"
+      },
+      {
+        "id": "xy-edge__repeatUntilloopStart-getChatMessagesprevious",
+        "source": "repeatUntilTokenBudgetFilled",
+        "target": "getChatHistory",
+        "sourceHandle": "loopStart",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__countTokensnext-setVariableprevious",
+        "source": "countTokens",
+        "target": "calculateTokenCost",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__endIfnext-repeatUntilChatHistoryProcessedloopEnd",
+        "source": "endIf",
+        "target": "repeatUntilChatHistoryProcessed",
+        "sourceHandle": "next",
+        "targetHandle": "loopEnd"
+      },
+      {
+        "id": "xy-edge__deductRemainingTokenBudgetnext-ifprevious",
+        "source": "calculateTokenCost",
+        "target": "if",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__iftrue-appendprevious",
+        "source": "if",
+        "target": "appendChatHistory",
+        "sourceHandle": "true",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__repeatUntilTokenBudgetFillednext-append2previous",
+        "source": "repeatUntilTokenBudgetFilled",
+        "target": "appendPromptMessages",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__filterReplyingParticipantnext-setTypingTrueprevious",
+        "source": "filterReplyingParticipant",
+        "target": "setTypingTrue",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setTypingTruenext-replyingCharacterprevious",
+        "source": "setTypingTrue",
+        "target": "replyingCharacter",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__filterUserParticipantnext-getChatParticipantprevious",
+        "source": "filterUserParticipant",
+        "target": "userParticipant",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__filtereReferencedCharactersnext-mapprevious",
+        "source": "filtereReferencedCharacters",
+        "target": "mapReferencedCharacters",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__mapReferencedCharactersnext-joinprevious",
+        "source": "mapReferencedCharacters",
+        "target": "referencedCharacters",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__referencedCharactersnext-fetchSyncin1",
+        "source": "referencedCharacters",
+        "target": "fetchSync",
+        "sourceHandle": "next",
+        "targetHandle": "in1"
+      },
+      {
+        "id": "xy-edge__referencedLoresnext-mapprevious",
+        "source": "getReferencedLores",
+        "target": "mapReferencedLore",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__joinnext-fetchSyncin2",
+        "source": "referencedLore",
+        "target": "fetchSync",
+        "sourceHandle": "next",
+        "targetHandle": "in2"
+      },
+      {
+        "id": "xy-edge__mapnext-joinprevious",
+        "source": "mapReferencedLore",
+        "target": "referencedLore",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__repeatUntilChatHistoryProcessednext-setVariableprevious",
+        "source": "repeatUntilChatHistoryProcessed",
+        "target": "setChatHistoryCursor",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariablenext-repeatUntilTokenBudgetFilledloopEnd",
+        "source": "setChatHistoryCursor",
+        "target": "repeatUntilTokenBudgetFilled",
+        "sourceHandle": "next",
+        "targetHandle": "loopEnd"
+      },
+      {
+        "id": "xy-edge__repeatUntilChatHistoryProcessedloopStart-setVariableprevious",
+        "source": "repeatUntilChatHistoryProcessed",
+        "target": "setProcessingChatMessages",
+        "sourceHandle": "loopStart",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariablenext-countTokensprevious",
+        "source": "setProcessingChatMessages",
+        "target": "countTokens",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__userParticipantnext-mapScanMessagesprevious",
+        "source": "userParticipant",
+        "target": "mapScanMessages",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__splitout1-filterUserParticipantprevious",
+        "source": "split",
+        "target": "filterUserParticipant",
+        "sourceHandle": "out1",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__splitout3-getDefaultModelprevious",
+        "source": "split",
+        "target": "getDefaultModel",
+        "sourceHandle": "out3",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__getDefaultModelnext-syncin3",
+        "source": "getDefaultModel",
+        "target": "sync",
+        "sourceHandle": "next",
+        "targetHandle": "in3"
+      },
+      {
+        "id": "xy-edge__repeatUntilStreamDoneloopStart-readLlmStreamprevious",
+        "source": "repeatUntilStreamDone",
+        "target": "readLlmStream",
+        "sourceHandle": "loopStart",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__iffalse-setVariable2previous",
+        "source": "if",
+        "target": "setMessageBatchCount",
+        "sourceHandle": "false",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariable2next-endIfin2",
+        "source": "setMessageBatchCount",
+        "target": "endIf",
+        "sourceHandle": "next",
+        "targetHandle": "in2"
+      },
+      {
+        "id": "xy-edge__appendChatHistorynext-setVariable3previous",
+        "source": "appendChatHistory",
+        "target": "setNextProcessingIndex",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariable3next-endIfin1",
+        "source": "setNextProcessingIndex",
+        "target": "endIf",
+        "sourceHandle": "next",
+        "targetHandle": "in1"
+      },
+      {
+        "id": "xy-edge__getChatHistorynext-setVariableprevious",
+        "source": "getChatHistory",
+        "target": "initializeNextProcessingIndex",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariablenext-repeatUntilChatHistoryProcessedprevious",
+        "source": "initializeNextProcessingIndex",
+        "target": "repeatUntilChatHistoryProcessed",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__splitParagraphsnext-repeatUntilParagraphsSentprevious",
+        "source": "splitParagraphs",
+        "target": "repeatUntilParagraphsSent",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setRemainingTokenBudgetnext-setVariableprevious",
+        "source": "setRemainingTokenBudget",
+        "target": "initializeMessageBatchCount",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__setVariablenext-repeatUntilTokenBudgetFilledprevious",
+        "source": "initializeMessageBatchCount",
+        "target": "repeatUntilTokenBudgetFilled",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__repeatUntilParagraphsSentnext-waitprevious",
+        "source": "repeatUntilParagraphsSent",
+        "target": "wait",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__waitnext-repeatUntilStreamDoneloopEnd",
+        "source": "wait",
+        "target": "repeatUntilStreamDone",
+        "sourceHandle": "next",
+        "targetHandle": "loopEnd"
+      },
+      {
+        "id": "xy-edge__appendPromptMessagesnext-tryprevious",
+        "source": "appendPromptMessages",
+        "target": "try",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__tryloopStart-llmprevious",
+        "source": "try",
+        "target": "llm",
+        "sourceHandle": "loopStart",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__repeatUntilStreamDonenext-tryloopEnd",
+        "source": "repeatUntilStreamDone",
+        "target": "try",
+        "sourceHandle": "next",
+        "targetHandle": "loopEnd"
+      },
+      {
+        "id": "xy-edge__trynext-setTypingFalseprevious",
+        "source": "try",
+        "target": "setTypingFalse",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__updateTypingStatusnext-broadcastFailedChatMessageprevious",
+        "source": "updateTypingStatus",
+        "target": "broadcastFailedChatMessage",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__tryerror-updateTypingStatusprevious",
+        "source": "try",
+        "target": "updateTypingStatus",
+        "sourceHandle": "error",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__syncnext-getVariableprevious",
+        "source": "sync",
+        "target": "user",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      },
+      {
+        "id": "xy-edge__usernext-fetchSplitprevious",
+        "source": "user",
+        "target": "fetchSplit",
+        "sourceHandle": "next",
+        "targetHandle": "previous"
+      }
+    ]
+  }
+}

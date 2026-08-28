@@ -760,6 +760,24 @@ const TOOLS = [
 
   // 7. TRACING & DEBUGGING
   {
+    name: 'openrp_execute_behavior_debug',
+    description: 'Trigger a behavior execution directly in editor debug mode and poll until completed or failed with full node error diagnostics.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        behaviorId: { type: 'string', description: 'Behavior ID to execute' },
+        chatId: { type: 'string', description: 'Chat ID (optional, will auto-detect recent chat if omitted)' },
+        messageId: { type: 'string', description: 'Message ID triggering the event (optional, will auto-detect latest message in chat if omitted)' },
+        chatModelId: { type: 'string', description: 'Model ID to simulate (defaults to 64ffc716-89a3-456e-9a95-ef4095f7d781)', default: '64ffc716-89a3-456e-9a95-ef4095f7d781' },
+        inputTokens: { type: 'integer', description: 'Token budget limit (defaults to 128000)', default: 128000 },
+        pollUntilDone: { type: 'boolean', description: 'Automatically poll until COMPLETED or FAILED', default: true },
+        maxPollAttempts: { type: 'integer', description: 'Maximum poll retries (defaults to 20)', default: 20 },
+        pollIntervalMs: { type: 'integer', description: 'Polling interval in milliseconds (defaults to 1500)', default: 1500 }
+      },
+      required: ['behaviorId']
+    }
+  },
+  {
     name: 'openrp_search_behavior_executions',
     description: 'Search behavior execution history runs with optional status, chat filters, or direct IDs array.',
     inputSchema: {
@@ -1391,6 +1409,126 @@ async function handleToolCall(name, args = {}) {
   }
 
   // 7. TRACING & DEBUGGING
+  if (name === 'openrp_execute_behavior_debug') {
+    const behaviorId = args.behaviorId;
+    if (!behaviorId) return { error: true, message: 'behaviorId is required' };
+
+    let chatId = args.chatId;
+    let messageId = args.messageId;
+
+    // Auto-detect chat if not provided
+    if (!chatId) {
+      const chatsRes = await makeRequest('/api/chats');
+      const chatList = chatsRes.data?.chats || chatsRes.data || [];
+      if (chatList.length > 0) {
+        chatId = chatList[0].id;
+      }
+    }
+
+    if (!chatId) {
+      return { error: true, message: 'chatId is required and could not be auto-detected' };
+    }
+
+    // Auto-detect message if not provided
+    if (!messageId) {
+      const msgRes = await makeRequest(`/api/chats/${chatId}/messages?size=1`);
+      const msgs = msgRes.data?.messages || msgRes.data || [];
+      if (msgs.length > 0) {
+        messageId = msgs[0].id;
+      }
+    }
+
+    if (!messageId) {
+      return { error: true, message: 'messageId is required and could not be auto-detected in chat' };
+    }
+
+    const chatModelId = args.chatModelId || '64ffc716-89a3-456e-9a95-ef4095f7d781';
+    const inputTokens = args.inputTokens || 128000;
+
+    const payload = {
+      triggerInput: {
+        trigger: 'events/chat_message',
+        input: {
+          chatId,
+          messageId,
+          config: {},
+          modelSettings: {
+            chatModelId,
+            inputTokens
+          }
+        }
+      },
+      triggerSource: 'editor'
+    };
+
+    const headers = {
+      'Origin': 'https://openrp.ai',
+      'Referer': `https://openrp.ai/behaviors/${behaviorId}?mode=debug`,
+      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36'
+    };
+
+    const execRes = await makeRequest(`/api/v1/behaviors/${behaviorId}/executions`, {
+      method: 'POST',
+      body: payload,
+      headers
+    });
+
+    if (execRes.error || !execRes.data) {
+      return execRes;
+    }
+
+    const executionId = execRes.data.id;
+    const result = {
+      success: true,
+      executionId,
+      status: execRes.data.status || 'BEHAVIOR_EXECUTION_STATUS_RUNNING',
+      debugUrl: `https://openrp.ai/behaviors/${behaviorId}?executionId=${executionId}&mode=debug`
+    };
+
+    if (args.pollUntilDone === false) {
+      return result;
+    }
+
+    // Auto-polling loop
+    const maxAttempts = args.maxPollAttempts || 20;
+    const intervalMs = args.pollIntervalMs || 1500;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+
+      const pollRes = await makeRequest('/api/v1/behavior-executions/search', {
+        method: 'POST',
+        body: { ids: [executionId] }
+      });
+
+      const ex = pollRes.data?.data?.[0];
+      if (!ex) continue;
+
+      result.status = ex.status;
+      result.nodeExecutionCount = ex.nodeExecutionCount;
+
+      if (ex.status === 'BEHAVIOR_EXECUTION_STATUS_COMPLETED') {
+        const nodesRes = await makeRequest(`/api/v1/behavior-executions/${executionId}/node-executions`);
+        result.nodeExecutions = nodesRes.data || [];
+        result.message = `Behavior execution ${executionId} completed successfully.`;
+        return result;
+      }
+
+      if (ex.status === 'BEHAVIOR_EXECUTION_STATUS_FAILED') {
+        result.success = false;
+        const nodesRes = await makeRequest(`/api/v1/behavior-executions/${executionId}/node-executions`);
+        const nodes = nodesRes.data || [];
+        result.nodeExecutions = nodes;
+        result.failedNodes = nodes.filter(n => n.status === 'BEHAVIOR_EXECUTION_STATUS_FAILED' || n.output?.error);
+        result.message = `Behavior execution ${executionId} failed.`;
+        return result;
+      }
+    }
+
+    result.message = `Execution ${executionId} is still in progress after ${maxAttempts * intervalMs / 1000}s.`;
+    return result;
+  }
+
   if (name === 'openrp_search_behavior_executions') {
     const payload = {};
     if (args.ids) payload.ids = Array.isArray(args.ids) ? args.ids : [args.ids];

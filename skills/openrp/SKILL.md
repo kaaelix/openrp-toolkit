@@ -24,6 +24,8 @@ The project has an existing skill named `openrp`. This `openrp` skill is the **p
   - `references/worlds_and_characters.md` — World CRUD operations, RAG vector embeddings, tier visibility controls, character schemas, and prompt templates.
   - `references/group_orchestration.md` — Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
   - `references/testing_and_debugging.md` — Manual test triggering in editor, live message metadata traces, error boundary trapping, and runtime error solutions.
+  - `references/layout_styling.md` — Visual spatial layouts (Linear, Diamond, Waterfall, Scoped), coordinate formulas, and anti-looping connection guarantees.
+  - `references/official_behavior_blueprints.md` — Exhaustive blueprints, node-by-node input/output specifications, and JSON exports for official default 54-node chat and multimodal image behaviors.
   - `commands/openrp-toolkit.md` & `commands/openrp.md` — Slash command dispatch workflows.
 
 ---
