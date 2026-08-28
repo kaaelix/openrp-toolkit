@@ -663,12 +663,12 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
 ---
 
 ### 32. `utilities/map`
-* **Description**: Transforms an array into a new array by evaluating an expression on each `item`.
+* **Description**: Transforms an array into a new array by evaluating a template or expression on each `item`.
 * **Inputs**:
-  * `list` (`array`, required).
-  * `itemExpression` (`expression`, required).
+  * `list` (`unknown[]`, required): Input array to iterate over.
+  * `itemTemplate` (`object`, required): Must be an object with `{ "$template": "..." }` or `{ "$expression": "..." }`. The current item is exposed as `item`.
 * **Outputs**:
-  * `list` (`array`): Mapped elements.
+  * `list` (`unknown[]`): Transformed mapped array.
 * **Example**:
 ```json
 {
@@ -676,7 +676,9 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
   "type": "utilities/map",
   "data": {
     "list": { "$expression": "getChatHistory.data" },
-    "itemExpression": { "$expression": "item.participant.name + ': ' + item.content" }
+    "itemTemplate": {
+      "$template": "{{ item.participant ? item.participant.name : 'User' }}: {{ item.content }}"
+    }
   }
 }
 ```
