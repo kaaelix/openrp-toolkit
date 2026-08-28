@@ -1,0 +1,15 @@
+# Source control & tests
+.git/
+.github/
+.gitignore
+*.auth.json
+*.tmp
+*.bak
+
+# Python byte code
+__pycache__/
+*.pyc
+
+# Local test scripts
+test/
+examples/
