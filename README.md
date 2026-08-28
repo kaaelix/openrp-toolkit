@@ -28,7 +28,9 @@
 
 ## Key Capabilities
 
-* **47 Comprehensive MCP Tools**: Full operational coverage across 9 distinct domains (Authentication, Worlds, Lorebook & Exclusive Access, Characters, Character Groups & Factions, Prompts, Behavior Graphs, Executions, Chats, and Foundation AI Models).
+* **56 Comprehensive MCP Tools**: Full operational coverage across 10 distinct domains (1-Click Auth & Gateway, Worlds, Lorebook & Exclusive Access, Characters, Character Groups & Factions, Prompts, Behavior Graphs, Tracing, Chatrooms, and Foundation AI Models).
+* **1-Click Eruda-Style Auth Bridge (`bridge.js`)**: Inject a native OpenRP.ai in-page confirmation window with user avatar, name, and handle directly on `openrp.ai`.
+* **Bulletproof Chunked Cookie Reconstruction**: Automatically stitches and decodes Supabase multi-chunk base64 auth tokens (`sb-*-auth-token.0`, `.1`, etc.).
 * **Pure Node.js Engine (Zero External Dependencies)**: Built entirely using Node.js 18+ native `fetch` and standard library modules. No compilation, external SDKs, or Python runtimes required.
 * **Autonomous Background Token Refresh Daemon**: Automatically refreshes Supabase JWT authentication every 45 minutes to maintain active sessions.
 * **Full 38-Node Behavior Engine Palette**: Support for all OpenRP node types (Events, AI Models, Control Flow, Storage, Utilities, Streaming, Try-Catch).
@@ -76,9 +78,9 @@ npm install -g openrp-toolkit
 After installation, run any of the available commands:
 ```bash
 openrp install    # Run interactive assistant installer
-openrp doctor     # Run diagnostic checks
-openrp auth       # Set up OpenRP authentication credentials
-openrp list       # Browse catalog of all 47 MCP tools & skills
+openrp doctor     # Run diagnostic checks (4-point health verification)
+openrp auth       # Set up OpenRP authentication via 1-Click Bridge or Manual Token
+openrp list       # Browse catalog of all 56 MCP tools & skills
 openrp serve      # Launch stdio MCP server process
 ```
 
@@ -156,21 +158,44 @@ Add to `claude_desktop_config.json`:
 
 ---
 
-## Authentication Setup
+## Authentication & 1-Click Bridge Architecture
 
-OpenRP utilizes Supabase authentication. You can configure your credentials interactively:
+OpenRP utilizes Supabase authentication. In `v1.2.0`, authentication is seamlessly integrated with a 1-click in-page confirmation flow.
 
+### Option A: 1-Click Eruda-Style Bridge (Fastest & Easiest)
+
+1. Launch the local Auth Gateway in your terminal:
+   ```bash
+   npx openrp-toolkit auth
+   ```
+2. Open **[OpenRP.ai](https://openrp.ai)** in your browser where you are logged in.
+3. Execute the 1-line script in your browser **Console (F12)** or click your Bookmarklet:
+   ```javascript
+   javascript:(function(){var s=document.createElement('script');s.src='http://127.0.0.1:45678/bridge.js';document.body.appendChild(s);})();
+   ```
+4. An OpenRP native modal window appears in the middle of the screen displaying:
+   * Your User Avatar & Profile Picture
+   * Name & Handle (e.g. `Kaa` / `@Seraaa`)
+   * *"Is this you? Authorize the OpenRP CLI & MCP Suite on this device."*
+5. Click **"Yes, Authorize"**. Credentials are automatically verified and saved to `~/.openrp_mcp_auth.json`.
+
+---
+
+### Option B: Automated Userscript (`openrp-auth.user.js`)
+
+Install the included [openrp-auth.user.js](openrp-auth.user.js) into Tampermonkey, Violentmonkey, or Kiwi Browser. Whenever you visit `https://openrp.ai/`, the script automatically detects your active session and syncs it with the local CLI & MCP daemon.
+
+---
+
+### Option C: Manual Token Setup
+
+You can also provide your token directly:
 ```bash
 npx openrp-toolkit auth
+# Select Option [2] Paste Token or Cookie
 ```
 
-### How to get your OpenRP credentials:
-1. Open your browser and navigate to **[OpenRP.ai](https://openrp.ai)**.
-2. Open Developer Tools (`F12` -> `Application` -> `Cookies` -> `https://openrp.ai`).
-3. Find cookie `sb-uixnaquqjhzcctyfoapf-auth-token` and copy its `access_token` and `refresh_token`.
-4. Paste the values into `npx openrp-toolkit auth`.
-
-*The MCP Server stores credentials in `~/.openrp_mcp_auth.json` and autonomously schedules token refresh intervals every 45 minutes.*
+*The MCP Server securely stores credentials in `~/.openrp_mcp_auth.json` and autonomously schedules token refresh intervals every 45 minutes.*
 
 ---
 
@@ -181,9 +206,9 @@ To verify your Node.js environment, credentials, package integrity, and OpenRP A
 npx openrp-toolkit doctor
 ```
 
-Output example:
+Output:
 ```
-┌  OpenRP Toolkit & MCP Suite (v1.0.0)
+┌  OpenRP Toolkit & MCP Suite (v1.2.0)
 │  Maintainer: kaaelix (https://github.com/kaaelix)
 │  Platform: https://openrp.ai
 └───────────────────────────────────────────────────────────────
@@ -191,8 +216,8 @@ Output example:
 Running OpenRP Toolkit Diagnostics...
 
 [CHECK 1/4] Node.js Runtime: v22.x (Native fetch support) -> OK
-[CHECK 2/4] Package Integrity & Skill Files -> OK (47 MCP tools ready)
-[CHECK 3/4] Authentication State -> OK (User ID: configured)
+[CHECK 2/4] Package Integrity & Skill Files -> OK (56 MCP tools ready)
+[CHECK 3/4] Authentication State -> OK (User ID: 019f4c49-0ec7-7374-8fab-d7e8add428bc)
 [CHECK 4/4] Testing connection to https://openrp.ai...
             OpenRP API Endpoint: HTTP 401 -> OK
 
@@ -250,19 +275,20 @@ When using AI coding assistants like **Google Antigravity**, **Gemini CLI**, **C
 
 ---
 
-## Complete 47 MCP Tools Reference Suite
+## Complete 56 MCP Tools Reference Suite
 
 | No | Category | Count | Tool Names & Summary |
 |---|---|---|---|
-| 1 | Authentication & Profile | 3 Tools | `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me` |
+| 1 | Authentication & Gateway | 5 Tools | `openrp_auth`, `openrp_web_login`, `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me` |
 | 2 | World Management | 6 Tools | `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world` |
 | 3 | Lorebook System & Exclusivity | 7 Tools | `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`, `openrp_list_lore_characters`, `openrp_list_character_lores` |
 | 4 | Character Studio & Factions | 9 Tools | `openrp_list_characters`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group` |
 | 5 | Prompt Templates | 4 Tools | `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt` |
-| 6 | Behavior Engine | 7 Tools | `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character` |
-| 7 | Tracing & Debugging | 3 Tools | `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions` |
+| 6 | Behavior Engine | 9 Tools | `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_detach_behavior_from_character`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group` |
+| 7 | Tracing & Debugging | 4 Tools | `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`, `openrp_execute_behavior_debug` |
 | 8 | Chat & Messaging | 5 Tools | `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message` |
-| 9 | AI Models & Discovery | 3 Tools | `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api` |
+| 9 | Skills & Synchronization | 2 Tools | `openrp_sync_skills`, `openrp_raw_api` |
+| 10 | AI Models & Discovery | 2 Tools | `openrp_list_models`, `openrp_discover_worlds` |
 
 ---
 
@@ -331,14 +357,15 @@ getChatMessage.chatParticipantId !== botFilter.list[0].id && getChatParticipant.
 
 ```
 openrp-toolkit/
-├── package.json                       # NPM package configuration (v1.0.0)
+├── package.json                       # NPM package configuration (v1.2.0)
+├── openrp-auth.user.js                # Browser userscript for auto-auth bridge
 ├── bin/
 │   ├── cli.js                         # Node.js CLI executable (stdio MCP runner & installer)
 │   └── validator.js                   # Static Behavior Graph Analyzer & Schema Linter
 ├── README.md                          # Master documentation & installation guide
 ├── LICENSE                            # MIT Open Source License
 ├── mcp/
-│   ├── server.js                      # Pure Node.js 47-Tool MCP JSON-RPC Server
+│   ├── server.js                      # Pure Node.js 56-Tool MCP JSON-RPC Server
 │   └── mcp_config.example.json        # Example client configuration
 ├── examples/                          # Pure Node.js code examples & verified blueprints
 │   ├── create_world_and_character.js
@@ -353,6 +380,7 @@ openrp-toolkit/
 │       │   ├── openrp-toolkit.md
 │       │   └── openrp.md
 │       └── references/
+│           ├── authentication.md           # 1-Click Bridge & Supabase Chunked Cookies
 │           ├── all_nodes_encyclopedia.md   # Exhaustive 37-Node Manual with JSON Examples
 │           ├── behavior_nodes.md           # 37-Node Palette & Zero-LLM Game Machine
 │           ├── token_optimization_and_modes.md # User-controlled Eco vs Full mode (78% savings)
