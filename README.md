@@ -339,7 +339,7 @@ openrp-toolkit/
 │   └── debug_behavior_execution.js
 ├── skills/
 │   └── openrp/
-│       ├── SKILL.md                   # AI Agent Skill Definition (Pure English)
+│       ├── SKILL.md                   # AI Agent Skill Definition
 │       ├── commands/                  # AI Slash Command Definitions (/openrp-toolkit)
 │       │   ├── openrp-toolkit.md
 │       │   └── openrp.md
