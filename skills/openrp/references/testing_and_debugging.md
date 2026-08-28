@@ -10,6 +10,10 @@ Before testing any Behavior Graph or initiating live chat messages:
 2. **Mandatory Behavior Binding Prerequisite**:
    * The behavior graph **MUST already be attached/set to the character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`).
    * If the behavior is not attached, OpenRP will route incoming messages through the standard fallback LLM chat without triggering the behavior pipeline graph.
+3. **Chatroom Session Architecture & Trigger Flow**:
+   * When a message is sent via `POST /api/chats/{chatId}/messages`, OpenRP identifies all character participants in the room.
+   * For each character with an attached behavior, OpenRP instantiates an execution run (`events/chat_message`).
+   * The resulting message emitted by `storage/insert_chat_message` includes the `metadata.behaviorExecutionIds` containing the exact run UUID for live tracing.
 
 ---
 
