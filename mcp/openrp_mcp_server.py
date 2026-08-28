@@ -426,6 +426,33 @@ TOOLS = [
             }
         }
     },
+    {
+        "name": "openrp_create_character_group",
+        "description": "Create a new Character Group (faction, party, or division) in a World.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "worldId": {"type": "string", "description": "World ID (optional if saved in auth)"},
+                "name": {"type": "string", "description": "Group Name (e.g. Guild of Explorers)"},
+                "handle": {"type": "string", "description": "Group Handle slug (e.g. guild-of-explorers)"},
+                "description": {"type": "string", "description": "Description of the group or faction"},
+                "parentGroupId": {"type": "string", "description": "Optional Parent Group ID for nested sub-factions", "default": None},
+                "autoAddMembers": {"type": "boolean", "description": "Automatically add new characters created in the world to this group", "default": False}
+            },
+            "required": ["name", "handle"]
+        }
+    },
+    {
+        "name": "openrp_delete_character_group",
+        "description": "Delete a Character Group from a World.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "groupId": {"type": "string", "description": "Character Group ID to delete"}
+            },
+            "required": ["groupId"]
+        }
+    },
 
     # 5. PROMPT TEMPLATES & SYSTEM PROMPTS
     {
@@ -695,10 +722,27 @@ TOOLS = [
     }
 ]
 
+def map_visibility(vis_input):
+    if not vis_input:
+        return "WORLD_VISIBILITY_PUBLIC"
+    v = str(vis_input).strip().lower()
+    if v in ["public", "world_visibility_public"]:
+        return "WORLD_VISIBILITY_PUBLIC"
+    elif v in ["unlisted", "world_visibility_unlisted"]:
+        return "WORLD_VISIBILITY_UNLISTED"
+    elif v in ["private", "world_visibility_private"]:
+        return "WORLD_VISIBILITY_PRIVATE"
+    return "WORLD_VISIBILITY_PUBLIC"
+
 def sanitize_graph(graph):
     """Ensures all nodes and edges have proper OpenRP ReactFlow schema, IDs, and connectivity."""
+    if isinstance(graph, str):
+        try:
+            graph = json.loads(graph)
+        except Exception:
+            return {"nodes": [], "edges": []}
     if not isinstance(graph, dict):
-        return graph
+        return {"nodes": [], "edges": []}
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
     
@@ -801,13 +845,14 @@ def handle_tool_call(name, args):
         u = args.get("userId") or auth_state.get("userId")
         if not u:
             return {"error": True, "message": "userId is required"}
+        vis_val = map_visibility(args.get("visibility"))
         payload = {
             "owner": u,
             "name": args["name"],
             "handle": args["handle"],
             "description": args.get("description", ""),
             "tags": args.get("tags", []),
-            "visibility": args.get("visibility", "WORLD_VISIBILITY_PUBLIC"),
+            "visibility": vis_val,
             "chatOnly": args.get("chatOnly", False)
         }
         return make_request(f"/api/users/{u}/worlds", method="POST", body=payload)
@@ -818,9 +863,11 @@ def handle_tool_call(name, args):
         if not u or not w:
             return {"error": True, "message": "userId and worldId are required"}
         data = {}
-        for k in ["name", "description", "readme", "tags", "visibility"]:
+        for k in ["name", "description", "readme", "tags"]:
             if k in args and args[k] is not None:
                 data[k] = args[k]
+        if "visibility" in args and args["visibility"] is not None:
+            data["visibility"] = map_visibility(args["visibility"])
         payload = {
             "updateType": "metadata",
             "data": data
@@ -972,6 +1019,25 @@ def handle_tool_call(name, args):
         if not w:
             return {"error": True, "message": "worldId is required"}
         return make_request(f"/api/v1/worlds/{w}/character-groups")
+        
+    elif name == "openrp_create_character_group":
+        w = args.get("worldId") or auth_state.get("worldId")
+        if not w or not args.get("name") or not args.get("handle"):
+            return {"error": True, "message": "worldId, name, and handle are required"}
+        payload = {
+            "name": args["name"],
+            "handle": args["handle"],
+            "description": args.get("description", ""),
+            "parentGroupId": args.get("parentGroupId", None),
+            "autoAddMembers": args.get("autoAddMembers", False)
+        }
+        return make_request(f"/api/v1/worlds/{w}/character-groups", method="POST", body=payload)
+        
+    elif name == "openrp_delete_character_group":
+        group_id = args.get("groupId") or args.get("characterGroupId")
+        if not group_id:
+            return {"error": True, "message": "groupId is required"}
+        return make_request(f"/api/v1/character-groups/{group_id}", method="DELETE")
         
     # --- PROMPTS ---
     elif name == "openrp_list_prompts":
