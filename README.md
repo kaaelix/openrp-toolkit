@@ -133,7 +133,25 @@ For Claude Desktop (`claude_desktop_config.json`):
 }
 ```
 
-### 3. Cursor IDE & Cursor CLI
+### 3. OpenAI Codex CLI & OpenAI Agents
+```bash
+# Install skill files for Codex
+mkdir -p ~/.codex/skills/openrp
+cp -r skills/openrp/* ~/.codex/skills/openrp/
+```
+In `~/.codex/mcp.json` or project config:
+```json
+{
+  "mcpServers": {
+    "openrp": {
+      "command": "python3",
+      "args": ["/path/to/openrp-toolkit/mcp/openrp_mcp_server.py"]
+    }
+  }
+}
+```
+
+### 4. Cursor IDE & Cursor CLI
 In your project workspace or global settings (`.cursor/mcp.json`):
 ```json
 {
@@ -151,7 +169,7 @@ mkdir -p .cursor/skills/openrp
 cp -r skills/openrp/* .cursor/skills/openrp/
 ```
 
-### 4. Windsurf IDE (Codeium Cascade)
+### 5. Windsurf IDE (Codeium Cascade)
 Add to `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
@@ -164,7 +182,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 }
 ```
 
-### 5. Android Termux & Linux CLI Environment
+### 6. Android Termux & Linux CLI Environment
 ```bash
 # Update system and install runtime dependencies
 pkg update -y && pkg install nodejs python git -y
@@ -173,7 +191,7 @@ pkg update -y && pkg install nodejs python git -y
 git clone https://github.com/Kaa/openrp-toolkit.git ~/openrp-toolkit
 
 # Run interactive installer
-cd ~/openrp-toolkit && node bin/cli.js install
+cd ~/openrp-toolkit && node bin/cli.js add
 ```
 
 ---

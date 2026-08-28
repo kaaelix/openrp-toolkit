@@ -23,24 +23,26 @@ const args = process.argv.slice(2);
 const command = args[0] || 'serve';
 
 function printBanner() {
-  console.log('+----------------------------------------------------------------+');
-  console.log('|      OpenRP Toolkit & Model Context Protocol (MCP) Suite       |');
-  console.log('|          Version: 3.0.0 | Maintainer: Kaa (Community)          |');
-  console.log('+----------------------------------------------------------------+\n');
+  console.log('┌  OpenRP Toolkit & MCP Suite (v3.0.0)');
+  console.log('│  Maintainer: Kaa (OpenRP Community Creator)');
+  console.log('│  Platform: https://openrp.ai');
+  console.log('└───────────────────────────────────────────────────────────────\n');
 }
 
 function showHelp() {
   printBanner();
   console.log('Usage:');
-  console.log('  openrp-toolkit [command] [options]\n');
+  console.log('  openrp-toolkit <command> [options]\n');
   console.log('Commands:');
-  console.log('  serve                  Launch MCP server in stdio mode (default)');
-  console.log('  install                Interactive installer for AI assistants & CLIs');
-  console.log('  auth                   Interactive setup for OpenRP credentials');
-  console.log('  doctor                 Run environment & API connectivity diagnostics');
+  console.log('  add, install           Interactive installer for AI assistants & CLIs');
+  console.log('  list                   List all 40 MCP tools, skills, and references');
+  console.log('  auth                   Interactive setup for OpenRP authentication');
+  console.log('  doctor                 Run diagnostics on Python, Node, and OpenRP API');
+  console.log('  serve                  Launch stdio MCP server (used by MCP clients)');
   console.log('  help, --help, -h       Display this help documentation\n');
   console.log('Quick Examples:');
-  console.log('  npx openrp-toolkit install');
+  console.log('  npx openrp-toolkit add');
+  console.log('  npx openrp-toolkit list');
   console.log('  npx openrp-toolkit auth');
   console.log('  npx openrp-toolkit doctor\n');
 }
@@ -100,7 +102,6 @@ function mergeJsonConfig(configPath, keyPath, value) {
       }
     }
   } catch (err) {
-    console.warn(`[WARN] Could not parse existing config at ${configPath}. Creating backup.`);
     fs.copyFileSync(configPath, `${configPath}.bak.${Date.now()}`);
     config = {};
   }
@@ -128,7 +129,7 @@ function getClaudeDesktopConfigPath() {
   return path.join(os.homedir(), '.config', 'Claude', 'claude_desktop_config.json');
 }
 
-const PLATFORM_REGISTRY = [
+const PLATFORMS = [
   {
     id: 'antigravity',
     name: 'Google Antigravity / Gemini CLI',
@@ -179,21 +180,26 @@ const PLATFORM_REGISTRY = [
     }
   },
   {
-    id: 'claude_desktop',
-    name: 'Claude Desktop App',
-    detailPath: getClaudeDesktopConfigPath(),
+    id: 'codex',
+    name: 'OpenAI Codex CLI / OpenAI Agents',
+    detailPath: path.join(os.homedir(), '.codex', 'skills', 'openrp'),
     detect: () => {
-      const configPath = getClaudeDesktopConfigPath();
-      return fs.existsSync(configPath) || fs.existsSync(path.dirname(configPath));
+      const p1 = path.join(os.homedir(), '.codex');
+      const p2 = path.join(os.homedir(), '.openai');
+      return fs.existsSync(p1) || fs.existsSync(p2);
     },
-    installSkill: null,
+    installSkill: (targetDir) => {
+      const dest = targetDir || path.join(os.homedir(), '.codex', 'skills', 'openrp');
+      const count = copyDirSync(SKILLS_DIR, dest);
+      return { type: 'skill', count, dest };
+    },
     installMcp: () => {
-      const configPath = getClaudeDesktopConfigPath();
-      mergeJsonConfig(configPath, ['mcpServers', 'openrp'], {
+      const mcpConfig = path.join(os.homedir(), '.codex', 'mcp.json');
+      mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
         command: 'python3',
         args: [MCP_SERVER_SCRIPT]
       });
-      return { type: 'mcp', dest: configPath };
+      return { type: 'mcp', dest: mcpConfig };
     }
   },
   {
@@ -226,7 +232,11 @@ const PLATFORM_REGISTRY = [
     detect: () => {
       return fs.existsSync(path.join(os.homedir(), '.codeium', 'windsurf'));
     },
-    installSkill: null,
+    installSkill: (targetDir) => {
+      const dest = targetDir || path.join(os.homedir(), '.codeium', 'windsurf', 'skills', 'openrp');
+      const count = copyDirSync(SKILLS_DIR, dest);
+      return { type: 'skill', count, dest };
+    },
     installMcp: () => {
       const mcpConfig = path.join(os.homedir(), '.codeium', 'windsurf', 'mcp_config.json');
       mergeJsonConfig(mcpConfig, ['mcpServers', 'openrp'], {
@@ -234,6 +244,24 @@ const PLATFORM_REGISTRY = [
         args: [MCP_SERVER_SCRIPT]
       });
       return { type: 'mcp', dest: mcpConfig };
+    }
+  },
+  {
+    id: 'claude_desktop',
+    name: 'Claude Desktop App',
+    detailPath: getClaudeDesktopConfigPath(),
+    detect: () => {
+      const configPath = getClaudeDesktopConfigPath();
+      return fs.existsSync(configPath) || fs.existsSync(path.dirname(configPath));
+    },
+    installSkill: null,
+    installMcp: () => {
+      const configPath = getClaudeDesktopConfigPath();
+      mergeJsonConfig(configPath, ['mcpServers', 'openrp'], {
+        command: 'python3',
+        args: [MCP_SERVER_SCRIPT]
+      });
+      return { type: 'mcp', dest: configPath };
     }
   }
 ];
@@ -249,60 +277,55 @@ function prompt(query) {
   }));
 }
 
-function scanEnvironments() {
-  console.log('Scanning environment for supported AI assistants and CLIs...\n');
-
-  console.log('Target Platform               Status        Path / Details');
-  console.log('-------------------------------------------------------------------------------');
+function renderDetectionScan() {
+  console.log('◇  Scanning environment for AI assistants and agent CLIs...\n');
 
   const scanResults = [];
-  for (const plat of PLATFORM_REGISTRY) {
+  for (const plat of PLATFORMS) {
     const isDetected = plat.detect();
     scanResults.push({ platform: plat, detected: isDetected });
 
-    const statusStr = isDetected ? '[DETECTED] ' : '[NOT FOUND]';
-    const nameStr = plat.name.padEnd(29);
+    const statusBadge = isDetected ? '[DETECTED] ' : '[NOT FOUND]';
+    const marker = isDetected ? '●' : '○';
+    const nameStr = plat.name.padEnd(34);
     const shortPath = plat.detailPath.replace(os.homedir(), '~');
-    console.log(`${nameStr} ${statusStr}   ${shortPath}`);
+    console.log(`   ${marker} ${nameStr} ${statusBadge} ${shortPath}`);
   }
-  console.log('-------------------------------------------------------------------------------\n');
 
+  const detectedCount = scanResults.filter(r => r.detected).length;
+  console.log(`\n│  Found ${detectedCount} detected environment(s).\n`);
   return scanResults;
 }
 
 async function runInstall() {
   printBanner();
   
-  const scanResults = scanEnvironments();
+  const scanResults = renderDetectionScan();
   const detectedList = scanResults.filter(r => r.detected).map(r => r.platform);
 
-  console.log(`Scan Summary: Found ${detectedList.length} active platform(s).\n`);
+  console.log('◆  Select installation mode:');
+  console.log(`   [1] Quick Add (Install to all ${detectedList.length} detected platforms)`);
+  console.log('   [2] Custom Selection (Choose specific AI tools from list)');
+  console.log('   [3] Install Skill Files Only (Custom target folder)');
+  console.log('   [4] Install Everywhere (All 6 supported platforms)');
+  console.log('   [5] Cancel\n');
 
-  console.log('Select Installation Action:');
-  console.log(`  [1] Quick Install to All Detected Platforms (${detectedList.length} found)`);
-  console.log('  [2] Custom Platform Selection (Pick specific targets)');
-  console.log('  [3] Install Skill Files Only (Custom target directory)');
-  console.log('  [4] Force Install to All Known Platforms (Global)');
-  console.log('  [5] Cancel\n');
-
-  const mode = await prompt('Enter choice (1-5) [default: 1]: ');
+  const mode = await prompt('   Select option (1-5) [default: 1]: ');
 
   if (mode === '5') {
-    console.log('\n[INFO] Installation cancelled.');
+    console.log('\n└  Installation cancelled.');
     return;
   }
 
   let selectedPlatforms = [];
-  let installSkills = true;
-  let installMcp = true;
   let customTargetDir = null;
 
   if (mode === '3') {
-    console.log('\nInstall Skill Files to Custom Directory:');
-    const customPath = await prompt(`Target Directory [default: ./openrp-skill]: `);
+    console.log('\n◇  Install to Custom Directory:');
+    const customPath = await prompt('   Target folder path [default: ./openrp-skill]: ');
     customTargetDir = path.resolve(customPath || './openrp-skill');
     selectedPlatforms = [{
-      name: 'Custom Directory',
+      name: `Custom Directory (${customTargetDir})`,
       installSkill: () => {
         const count = copyDirSync(SKILLS_DIR, customTargetDir);
         return { type: 'skill', count, dest: customTargetDir };
@@ -310,80 +333,109 @@ async function runInstall() {
       installMcp: null
     }];
   } else if (mode === '2') {
-    console.log('\nAvailable Target Platforms:');
-    PLATFORM_REGISTRY.forEach((p, i) => {
+    console.log('\n◇  Available Platforms:');
+    PLATFORMS.forEach((p, i) => {
       const isDet = p.detect() ? '(Detected)' : '';
-      console.log(`  [${i + 1}] ${p.name.padEnd(30)} ${isDet}`);
+      console.log(`   [${i + 1}] ${p.name.padEnd(35)} ${isDet}`);
     });
-    console.log(`  [${PLATFORM_REGISTRY.length + 1}] Select All Platforms\n`);
+    console.log(`   [${PLATFORMS.length + 1}] All Platforms\n`);
 
-    const sel = await prompt(`Select platform number (1-${PLATFORM_REGISTRY.length + 1}): `);
+    const sel = await prompt(`   Choose platform number (1-${PLATFORMS.length + 1}): `);
     const selIdx = parseInt(sel, 10);
 
-    if (selIdx >= 1 && selIdx <= PLATFORM_REGISTRY.length) {
-      selectedPlatforms = [PLATFORM_REGISTRY[selIdx - 1]];
-    } else if (selIdx === PLATFORM_REGISTRY.length + 1) {
-      selectedPlatforms = PLATFORM_REGISTRY;
+    if (selIdx >= 1 && selIdx <= PLATFORMS.length) {
+      selectedPlatforms = [PLATFORMS[selIdx - 1]];
+    } else if (selIdx === PLATFORMS.length + 1) {
+      selectedPlatforms = PLATFORMS;
     } else {
-      console.log('[ERROR] Invalid selection. Aborting.');
+      console.log('\n[ERROR] Invalid selection. Aborting.');
       return;
     }
   } else if (mode === '4') {
-    selectedPlatforms = PLATFORM_REGISTRY;
+    selectedPlatforms = PLATFORMS;
   } else {
-    // Quick install (mode 1 or default)
     if (detectedList.length > 0) {
       selectedPlatforms = detectedList;
     } else {
-      console.log('[INFO] No specific environment was detected automatically.');
-      console.log('[INFO] Defaulting to Google Antigravity / Universal Agent Directory (~/.agents/skills).');
-      selectedPlatforms = [PLATFORM_REGISTRY[0]];
+      console.log('│  No specific environment detected automatically.');
+      console.log('│  Defaulting to Google Antigravity & Universal Agent Skills (~/.agents/skills).');
+      selectedPlatforms = [PLATFORMS[0]];
     }
   }
 
-  console.log(`\nExecuting installation for ${selectedPlatforms.length} target(s)...\n`);
+  console.log(`\n◇  Installing OpenRP Skill & MCP Configuration...\n`);
 
   let successCount = 0;
   let failCount = 0;
 
   for (let i = 0; i < selectedPlatforms.length; i++) {
     const plat = selectedPlatforms[i];
-    console.log(`[${i + 1}/${selectedPlatforms.length}] Configuring ${plat.name}...`);
+    console.log(`   [${i + 1}/${selectedPlatforms.length}] Configuring ${plat.name}`);
 
     try {
-      if (installSkills && plat.installSkill) {
+      if (plat.installSkill) {
         const sRes = plat.installSkill(customTargetDir);
-        console.log(`      + Copied ${sRes.count} skill and reference files to:`);
-        console.log(`        ${sRes.dest.replace(os.homedir(), '~')}`);
+        console.log(`       -> Skill files (${sRes.count} files): ${sRes.dest.replace(os.homedir(), '~')}`);
       }
 
-      if (installMcp && plat.installMcp) {
+      if (plat.installMcp) {
         const mRes = plat.installMcp();
         if (mRes.dest) {
-          console.log(`      + Registered MCP server configuration in:`);
-          console.log(`        ${mRes.dest.replace(os.homedir(), '~')}`);
+          console.log(`       -> MCP server registry: ${mRes.dest.replace(os.homedir(), '~')}`);
         } else if (mRes.detail) {
-          console.log(`      + ${mRes.detail}`);
+          console.log(`       -> ${mRes.detail}`);
         }
       }
 
-      console.log('      Status: OK\n');
+      console.log('       Status: OK\n');
       successCount++;
     } catch (err) {
-      console.error(`      Status: FAILED (${err.message})\n`);
+      console.error(`       Status: FAILED (${err.message})\n`);
       failCount++;
     }
   }
 
-  console.log('+----------------------------------------------------------------+');
-  console.log(`| Installation Summary: ${successCount} configured successfully, ${failCount} failed. |`);
-  console.log('+----------------------------------------------------------------+\n');
+  console.log('└───────────────────────────────────────────────────────────────');
+  console.log(`  Installation Complete: ${successCount} configured successfully, ${failCount} failed.`);
+  console.log('────────────────────────────────────────────────────────────────\n');
 
-  console.log('Next Recommended Actions:');
+  console.log('Next Steps:');
   console.log('  1. Authenticate with OpenRP:');
   console.log('     npx openrp-toolkit auth');
   console.log('  2. Run environment diagnostics:');
   console.log('     npx openrp-toolkit doctor\n');
+}
+
+function runList() {
+  printBanner();
+  console.log('OpenRP Toolkit Catalog (40 MCP Tools & Documentation)\n');
+
+  const tools = [
+    { cat: '1. Authentication & Profile', items: ['openrp_set_auth', 'openrp_refresh_token', 'openrp_get_me'] },
+    { cat: '2. World Management', items: ['openrp_list_my_worlds', 'openrp_get_world', 'openrp_create_world', 'openrp_update_world', 'openrp_update_world_readme', 'openrp_delete_world'] },
+    { cat: '3. Lorebook System', items: ['openrp_list_lores', 'openrp_get_lore', 'openrp_create_lore', 'openrp_update_lore', 'openrp_delete_lore'] },
+    { cat: '4. Character Studio', items: ['openrp_list_characters', 'openrp_get_character', 'openrp_create_character', 'openrp_update_character', 'openrp_delete_character'] },
+    { cat: '5. Prompt Template System', items: ['openrp_list_prompts', 'openrp_get_prompt', 'openrp_create_prompt', 'openrp_delete_prompt'] },
+    { cat: '6. Behavior Pipeline Engine', items: ['openrp_list_behaviors', 'openrp_get_behavior', 'openrp_update_behavior', 'openrp_edit_behavior_node', 'openrp_deploy_behavior', 'openrp_delete_behavior', 'openrp_attach_behavior_to_character'] },
+    { cat: '7. Tracing & Debugging', items: ['openrp_search_behavior_executions', 'openrp_get_behavior_execution', 'openrp_get_behavior_node_executions'] },
+    { cat: '8. Chat & Live Messaging', items: ['openrp_list_chats', 'openrp_get_chat', 'openrp_get_chat_messages', 'openrp_send_message'] },
+    { cat: '9. Discovery & AI Models', items: ['openrp_list_models', 'openrp_discover_worlds', 'openrp_raw_api'] }
+  ];
+
+  tools.forEach(t => {
+    console.log(`◇ ${t.cat} (${t.items.length} tools):`);
+    t.items.forEach(toolName => {
+      console.log(`   - ${toolName}`);
+    });
+    console.log('');
+  });
+
+  console.log('Skill Reference Documents:');
+  console.log('   - SKILL.md (Autonomous Behavior Generation Guardrails, Rules 1-9)');
+  console.log('   - behavior_nodes.md (Complete 38-Node Palette Reference)');
+  console.log('   - group_orchestration.md (Multi-Agent & Arbiter Blueprints)');
+  console.log('   - worlds_and_characters.md (Schemas, Visibility & Personas)');
+  console.log('   - testing_and_debugging.md (Execution Traces & Diagnostics)\n');
 }
 
 async function runAuth() {
@@ -514,14 +566,14 @@ async function runDoctor() {
     errors++;
   }
 
-  console.log('\n+----------------------------------------------------------------+');
+  console.log('\n┌───────────────────────────────────────────────────────────────┐');
   if (errors === 0) {
-    console.log('| [SUCCESS] All 5 diagnostic checks passed with 0 errors.         |');
-    console.log('| Your OpenRP Toolkit environment is ready to use!               |');
+    console.log('│ [SUCCESS] All 5 diagnostic checks passed with 0 errors.       │');
+    console.log('│ Your OpenRP Toolkit environment is ready to use!              │');
   } else {
-    console.log(`| [WARN] Diagnostic completed with ${errors} issue(s).                        |`);
+    console.log(`│ [WARN] Diagnostic completed with ${errors} issue(s).                      │`);
   }
-  console.log('+----------------------------------------------------------------+\n');
+  console.log('└───────────────────────────────────────────────────────────────┘\n');
 }
 
 // Route commands
@@ -529,8 +581,12 @@ switch (command) {
   case 'serve':
     runMcpServer();
     break;
+  case 'add':
   case 'install':
     runInstall();
+    break;
+  case 'list':
+    runList();
     break;
   case 'auth':
     runAuth();
