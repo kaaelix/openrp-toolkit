@@ -721,6 +721,9 @@ switch (command) {
   case 'upgrade':
     runUpdate();
     break;
+  case 'release':
+    require('./release');
+    break;
   case 'list':
     runList();
     break;

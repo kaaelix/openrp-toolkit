@@ -12,6 +12,7 @@
     "serve": "node ./bin/cli.js serve",
     "sync": "node ./bin/cli.js sync",
     "update": "node ./bin/cli.js update",
+    "release": "node ./bin/release.js",
     "postinstall": "node ./bin/cli.js sync --silent || true",
     "install-skill": "node ./bin/cli.js install",
     "doctor": "node ./bin/cli.js doctor",

@@ -1,11 +1,8 @@
-name: CI & Auto-Publish
+name: CI & Auto-Publish (Manual Dispatch)
 
 on:
-  push:
-    branches: [main]
-  release:
-    types: [published]
   workflow_dispatch:
+
 
 jobs:
   validate-and-test:
