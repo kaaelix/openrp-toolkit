@@ -1,6 +1,6 @@
 {
   "name": "openrp-toolkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Model Context Protocol (MCP) Server and AI Agent Skill Suite for OpenRP.ai",
   "main": "mcp/server.js",
   "bin": {
