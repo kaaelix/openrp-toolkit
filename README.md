@@ -6,8 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-Kaa-FF4081?style=for-the-badge)](https://openrp.ai/Seraaa)
 
-> **Lead Architect & Maintainer**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))  
-> *Enterprise autonomous AI agent skill and Model Context Protocol (MCP) suite for [OpenRP.ai](https://openrp.ai).*
+> **Author & Maintainer**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))  
+> *An independent, community-built AI Agent Skill and Model Context Protocol (MCP) suite for [OpenRP.ai](https://openrp.ai).*
 
 ---
 
@@ -220,12 +220,13 @@ openrp-toolkit/
 
 ---
 
-## 👨‍💻 Project Maintainer & Technical Leadership
+## 👨‍💻 Community Creator & Maintainer
 
-* **Lead Architect & Developer**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa))
+* **Created by**: **Kaa** ([@Seraaa](https://openrp.ai/Seraaa)) — *OpenRP Community Creator & Developer*
 * **Platform**: [OpenRP.ai](https://openrp.ai)
 * **Standard**: Model Context Protocol (MCP) Standard `2024-11-05`
-* **Contributions**: Pull requests, issues, and graph topology contributions are welcome.
+* **Disclaimer**: This is an independent, community-driven open-source project created for the OpenRP.ai creator community and AI agents. It is not an official product of, nor affiliated with, OpenRP.ai core platform developers.
+* **Contributions**: Community pull requests, bug reports, and graph templates are warmly welcome!
 
 ---
 
