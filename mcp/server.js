@@ -12,6 +12,7 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const { renderGraphToMermaid } = require('../lib/mermaid_renderer.js');
+const { beautifyGraph } = require('../lib/layout_engine.js');
 const BASE_URL = process.env.OPENRP_BASE_URL || 'https://openrp.ai';
 const SUPABASE_URL = process.env.OPENRP_SUPABASE_URL || 'https://uixnaquqjhzcctyfoapf.supabase.co';
 const SUPABASE_ANON_KEY = process.env.OPENRP_SUPABASE_ANON_KEY || 'sb_publishable_DN2mm7PLLgF2GEEd3bjZFw_T36rl4x0';
@@ -208,6 +209,19 @@ function sanitizeGraph(graph) {
 
 // --- 47 TOOLS SCHEMA DEFINITIONS ---
 const TOOLS = [
+  {
+    name: 'openrp_beautify_graph',
+    description: 'Automatically calculates and applies neat X/Y coordinates to a messy OpenRP Behavior Graph.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'User ID (optional if saved in auth)' },
+        worldId: { type: 'string', description: 'World ID (optional if saved in auth)' },
+        behaviorId: { type: 'string', description: 'ID of the behavior to beautify' }
+      },
+      required: ['behaviorId']
+    }
+  },
   // 1. AUTH & PROFILE
   {
     name: 'openrp_auth',
@@ -996,6 +1010,41 @@ async function handleToolCall(name, args = {}) {
       }
     } catch (e) {}
   }, 1500);
+
+  if (name === 'openrp_beautify_graph') {
+    try {
+      const u = args.userId || authState.userId;
+      const w = args.worldId || authState.worldId;
+      const b = args.behaviorId;
+      if (!u || !w || !b) return { error: true, message: 'userId, worldId, and behaviorId are required' };
+      
+      const behavior = await makeRequest(`/api/users/${u}/worlds/${w}/behaviors/${b}`);
+      if (behavior && behavior.error) return behavior;
+      
+      const actualBehavior = behavior.data || behavior;
+      let graphData = typeof actualBehavior.graph === 'string' ? JSON.parse(actualBehavior.graph) : actualBehavior.graph || actualBehavior;
+      
+      const beautifiedGraph = beautifyGraph(graphData);
+      
+      // Save it back to OpenRP
+      await makeRequest(`/api/users/${u}/worlds/${w}/behaviors/${b}`, {
+        method: 'PUT',
+        body: {
+          name: actualBehavior.name,
+          handle: actualBehavior.handle,
+          graph: typeof actualBehavior.graph === 'string' ? JSON.stringify(sanitizeGraph(beautifiedGraph)) : sanitizeGraph(beautifiedGraph)
+        }
+      });
+      
+      return {
+        success: true,
+        message: 'Graph successfully beautified and saved back to OpenRP.',
+        preview: beautifiedGraph.nodes.slice(0, 3).map(n => ({ id: n.id, position: n.position }))
+      };
+    } catch (err) {
+      return { error: true, message: `Error beautifying graph: ${err.message}` };
+    }
+  }
 
   // 1. AUTH & PROFILE
   if (name === 'openrp_auth' || name === 'openrp_web_login') {
