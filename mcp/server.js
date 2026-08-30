@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
-
+const { renderGraphToMermaid } = require('../lib/mermaid_renderer.js');
 const BASE_URL = process.env.OPENRP_BASE_URL || 'https://openrp.ai';
 const SUPABASE_URL = process.env.OPENRP_SUPABASE_URL || 'https://uixnaquqjhzcctyfoapf.supabase.co';
 const SUPABASE_ANON_KEY = process.env.OPENRP_SUPABASE_ANON_KEY || 'sb_publishable_DN2mm7PLLgF2GEEd3bjZFw_T36rl4x0';
@@ -632,6 +632,17 @@ const TOOLS = [
         userId: { type: 'string', description: 'User ID (optional if saved in auth)' },
         worldId: { type: 'string', description: 'World ID (optional if saved in auth)' },
         behaviorId: { type: 'string', description: 'Behavior ID' }
+      },
+      required: ['behaviorId']
+    }
+  },
+  {
+    name: 'openrp_render_behavior_mermaid',
+    description: 'Renders an OpenRP Behavior Graph into a Mermaid.js diagram for visual debugging.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        behaviorId: { type: 'string', description: 'ID of the behavior to render' }
       },
       required: ['behaviorId']
     }
@@ -1340,6 +1351,29 @@ async function handleToolCall(name, args = {}) {
     const b = args.behaviorId;
     if (!u || !w || !b) return { error: true, message: 'userId, worldId, and behaviorId are required' };
     return makeRequest(`/api/users/${u}/worlds/${w}/behaviors/${b}`);
+  }
+
+  if (name === 'openrp_render_behavior_mermaid') {
+    try {
+      const response = await makeRequest(`/api/v1/behaviors/${args.behaviorId}`);
+      if (response && response.error) throw new Error(response.message);
+      const behavior = response.data || response;
+      // The graph might be in behavior.graph or behavior depending on API wrapper
+      const graphData = typeof behavior.graph === 'string' ? JSON.parse(behavior.graph) : behavior.graph || behavior;
+      
+      try {
+        const mermaidStr = renderGraphToMermaid(graphData);
+        return {
+          success: true,
+          mermaid: `\n\`\`\`mermaid\n${mermaidStr}\n\`\`\`\n`
+        };
+      } catch (renderErr) {
+        return { error: true, message: `Error rendering graph: ${renderErr.message}` };
+      }
+      
+    } catch (err) {
+      return { error: true, message: `Error fetching or parsing behavior: ${err.message}` };
+    }
   }
 
   if (name === 'openrp_update_behavior') {
