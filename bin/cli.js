@@ -15,6 +15,7 @@ const os = require('os');
 const { execSync } = require('child_process');
 const readline = require('readline');
 const https = require('https');
+const { renderGraphToMermaid } = require('../lib/mermaid_renderer.js');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const MCP_SERVER_SCRIPT = path.join(PACKAGE_ROOT, 'mcp', 'server.js');
@@ -42,6 +43,7 @@ function showHelp() {
   console.log('  list                   List all 47 MCP tools, skills, and references');
   console.log('  auth                   Interactive setup for OpenRP authentication');
   console.log('  doctor                 Run diagnostics on Node runtime, config, and OpenRP API');
+  console.log('  render <behaviorId>    Render a behavior graph to Mermaid.js diagram');
   console.log('  serve                  Launch stdio MCP server (used by MCP clients)');
   console.log('  help, --help, -h       Display this help documentation\n');
   console.log('Quick Examples:');
@@ -1218,8 +1220,67 @@ async function runUpdate() {
   console.log('└───────────────────────────────────────────────────────────────┘\n');
 }
 
+async function runRender() {
+  const behaviorId = args[1];
+  if (!behaviorId) {
+    console.error('Usage: openrp-toolkit render <behaviorId>');
+    process.exit(1);
+  }
+  
+  const authFile = path.join(os.homedir(), '.openrp_mcp_auth.json');
+  if (!fs.existsSync(authFile)) {
+    console.error('API key not found. Run "openrp-toolkit auth" first.');
+    process.exit(1);
+  }
+  let auth;
+  try {
+    auth = JSON.parse(fs.readFileSync(authFile, 'utf8'));
+  } catch (err) {
+    console.error('Invalid auth state (corrupted JSON). Run "openrp-toolkit auth" first.');
+    process.exit(1);
+  }
+  if (!auth.token) {
+    console.error('Invalid auth state. Run "openrp-toolkit auth" first.');
+    process.exit(1);
+  }
+  
+  const u = auth.userId;
+  const w = auth.worldId;
+  if (!u || !w) {
+    console.error('Missing userId or worldId in auth state.');
+    process.exit(1);
+  }
+  
+  try {
+    console.log(`Fetching behavior ${behaviorId}...`);
+    const response = await fetch(`https://openrp.ai/api/users/${u}/worlds/${w}/behaviors/${behaviorId}`, {
+      headers: { 'Authorization': `Bearer ${auth.token}` }
+    });
+    
+    if (!response.ok) {
+      const errText = await response.text().catch(() => 'Unknown Error');
+      throw new Error(`HTTP ${response.status}: ${errText}`);
+    }
+    const data = await response.json();
+    const behavior = data.data || data;
+    
+    const graphData = typeof behavior.graph === 'string' ? JSON.parse(behavior.graph) : behavior.graph || behavior;
+    const mermaid = renderGraphToMermaid(graphData);
+    
+    console.log('\n--- Mermaid.js Graph ---\n');
+    console.log(mermaid);
+    console.log('\n------------------------\n');
+  } catch (err) {
+    console.error(`Failed to render graph: ${err.message}`);
+    process.exit(1);
+  }
+}
+
 // Route commands
 switch (command) {
+  case 'render':
+    runRender();
+    break;
   case 'serve':
     runMcpServer();
     break;
