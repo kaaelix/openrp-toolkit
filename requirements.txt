@@ -1,7 +1,0 @@
-# OpenRP Toolkit & MCP Server
-# Pure Python 3.10+ Standard Library implementation.
-# Zero required third-party dependencies!
-
-# Optional developer & testing dependencies:
-# pytest>=7.0.0
-# requests>=2.28.0

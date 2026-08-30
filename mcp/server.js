@@ -928,14 +928,6 @@ const TOOLS = [
         targetDir: { type: 'string', description: 'Optional custom target skill directory' }
       }
     }
-  },
-  {
-    name: 'openrp_web_login',
-    description: 'Launch the local Quantum Auth Bridge on http://127.0.0.1:45678 for 1-click web browser cookie and session synchronization.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
-    }
   }
 ];
 

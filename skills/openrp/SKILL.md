@@ -11,7 +11,7 @@ Master technical specification, operational protocols, and autonomous developmen
 
 ## Role & Core Mandate
 
-You are working as an **autonomous development agent for OpenRP**.
+You are working as a **Senior AI Architect and Reliability Engineer** for OpenRP. Your mandate goes beyond merely connecting graph nodes; you must anticipate race conditions, design defensive architectures (fail-safes, error trapping), and rigorously validate structural integrity using static analysis and runtime tracing.
 
 The project has an existing skill named `openrp`. This `openrp` skill is the **primary and authoritative central knowledge base** for OpenRP-related development.
 
@@ -25,9 +25,9 @@ The project has an existing skill named `openrp`. This `openrp` skill is the **p
   - `references/worlds_and_characters.md` — World CRUD operations, RAG vector embeddings, tier visibility controls, character schemas, and prompt templates.
   - `references/group_orchestration.md` — Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
   - `references/testing_and_debugging.md` — Manual test triggering in editor, live message metadata traces, error boundary trapping, and runtime error solutions.
-  - `references/layout_styling.md` — Visual spatial layouts (Linear, Diamond, Waterfall, Scoped), coordinate formulas, and anti-looping connection guarantees.
+  - `references/canvas_layouts_and_edge_styles.md` — Visual spatial layouts (Linear, Diamond, Waterfall, Scoped), coordinate formulas, and anti-looping connection guarantees.
   - `references/official_behavior_blueprints.md` — Exhaustive blueprints, node-by-node input/output specifications, and JSON exports for official default 54-node chat and multimodal image behaviors.
-  - `commands/openrp-toolkit.md` & `commands/openrp.md` — Slash command dispatch workflows.
+  - `commands/openrp.md` — Slash command dispatch workflows.
 
 ---
 
@@ -126,15 +126,15 @@ When an OpenRP-related problem occurs or when modifying/testing any Behavior Gra
 
 *Do not consider OpenRP debugging complete until the behavior execution status is confirmed as `BEHAVIOR_EXECUTION_STATUS_COMPLETED` in the runtime trace log and the reusable knowledge has been preserved in the skill.*
 
-### 7. Autonomous Working Rules
-Be proactive and autonomous:
-- Continue to the next safe and relevant step without waiting for unnecessary confirmation.
+### 7. Senior Autonomous Engineering Rules
+Be proactive, rigorous, and autonomous:
+- **Defensive Design First**: Never wire an `ai/llm` or `utilities/http_request` without asking: "What if it fails?" Wrap volatile nodes in `control_flow/try` to prevent fatal runtime cascades.
+- **Relentless Iteration**: DO NOT stop or ask the user for help at the first sign of a failure or HTTP 400/500 error. Use `openrp_execute_behavior_debug`, `validator.js`, and raw APIs to extract stack traces. Attempt to autonomously hotfix the issue at least 3 times before escalating.
+- **Explain the 'Why'**: When presenting a solution, don't just say "I fixed it". Briefly explain the root cause, the trade-off chosen, and how the fix prevents future race conditions or data loss.
 - Ask the user only when:
-  - A required decision cannot be inferred,
-  - Multiple choices would materially change the result,
-  - An action is destructive or irreversible,
-  - Required credentials or external access are unavailable,
-  - Or the user's intent is genuinely ambiguous.
+  - A required architectural decision cannot be inferred.
+  - Multiple choices would materially change the result or cost (e.g. Eco vs Full token limits).
+  - An action is destructive (deleting a production World/Behavior).
 
 ### 8. Completion Protocol
 For every meaningful OpenRP-related task:
@@ -182,8 +182,11 @@ OpenRP separates world design, character identities, and interactive execution i
 - **[Worlds & Characters Reference](./references/worlds_and_characters.md)**: World CRUD operations, RAG vector embeddings, tier visibility controls (`public`, `unlisted`, `private`), character schemas, and few-shot formatting.
 - **[Group Orchestration Reference](./references/group_orchestration.md)**: Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
 - **[Production Blueprints & Verified Graphs](./references/production_blueprints.md)**: 5 copy-pasteable production blueprints (Official RAG Chat, AI Image Synthesis, Zero-LLM Fast Path, Multi-Agent Party, Eco-Mode Pruning).
+- **[Verified Production Graph (High-Capacity Roleplay)](./references/verified_production_graph.md)**: Exact `data` shapes for every node + the single-LLM RAG+state-machine architecture, extracted from a live 5000-node production behavior graph. Authoritative schema reference for graph generation.
+- **[Verified Node Schemas & Experiment Findings](./references/verified_node_schemas.md)**: All 35 node `data` schemas verified by live deploy+execute, plus handle-validation rules, model compatibility matrix, and corrections to outdated docs (`repeat_until.expression`, `http_request.headers` enum, `prune_text.direction`, `responseSchema` plain string, try-node exit requirements).
 - **[Canvas Layouts & Edge Styling Reference](./references/canvas_layouts_and_edge_styles.md)**: 5 visual layout modes (Snake S-Curve, Bento Modular, Diamond Fork-Join, Cyberpunk Wave, Radial Orbit) and animated color-coded ReactFlow edge wires.
 - **[OpenRP-Base Architecture & Lineage](./references/openrp_base_architecture_lineage.md)**: Dissection of the official `openrp-ai/openrp-base` repository, protobuf definitions (`ai.openrp.base.metadata`), and the evolution from V1 prompt nodes into the V2 Behavior DAG Engine.
+- **[All 37 Node Types — 56-Behavior Battery](./references/56_behavior_battery.md)**: 55/56 editor-debug COMPLETED run exercising every node type; `.length` not `.size()`, `if` output shape, cron-not-debuggable, multi-LLM poll window, end_if topology trap.
 - **[Runtime Node Output Snapshots & Tracing](./references/runtime_output_snapshots.md)**: Exact JSON output payloads for all nodes from real execution traces, and how `metadata.behaviorExecutionIds` maps user messages to bot outputs.
 - **[Testing & Diagnostics Runbook](./references/testing_and_debugging.md)**: Manual test triggering in the editor, live message metadata traces, error boundary trapping, and runtime error solutions.
 
@@ -256,11 +259,13 @@ AI Agents can set authentication at runtime by calling:
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "cookie": "sb-uixnaquqjhzcctyfoapf-auth-token=...",
-  "userId": "usr_...",
+  "refreshToken": "...",
+  "userId": "019f4c49-0ec7-7374-8fab-d7e8add428bc",
   "worldId": "wrld_..."
 }
 ```
+> [!TIP]
+> `userId` should be the **OpenRP Platform Account ID** (UUIDv7, from `openrp_get_me.data.id`), not the Supabase auth UID. Both work in route paths, but the platform ID is what `get_me` returns and what appears in every `owner.id`. The `token` (access JWT) expires after ~1h — the `refreshToken` outlives it, so always store both and call `openrp_refresh_token` on `403 user_not_authorized`.
 
 ## HTTP Status & Error Code Reference
 
@@ -269,7 +274,7 @@ When diagnosing API responses or error logs:
 | HTTP Status | Error Type | Root Cause & Resolution |
 |---|---|---|
 | `401 Unauthorized` | Token Expired / Missing | JWT token is missing or expired. Call `openrp_refresh_token` or provide fresh cookies to `openrp_set_auth`. |
-| `403 Forbidden` | Permission / Tier Limit | Attempting to access resources owned by another user, or setting a World to `private` on a Free account tier (Free accounts only support `public` and `unlisted`). |
+| `403 Forbidden` | Permission / Tier Limit / **Expired Token** | Attempting to access resources owned by another user, setting a World to `private` on a Free account tier, **or presenting an expired access token** (verified: `/api/worlds/my-worlds` returns `{"code":"user_not_authorized"}` and `/api/users/me` returns `data:null` when the JWT is expired — refresh fixes it). |
 | `404 Not Found` | Resource Missing | The specified `worldId`, `characterId`, `loreId`, or `behaviorId` does not exist or was deleted. |
 | `400 Bad Request` | Payload Validation Error | Missing required fields (e.g. `name`, `handle`) or invalid JEXL syntax in graph nodes. |
 | `500 Internal Error` | Server Exception / Expired Signature | In OpenRP, sending an expired Supabase JWT or querying an endpoint with mismatched `userId` and `worldId` triggers a backend 500. Refresh the token via `openrp_set_auth` or verify resource IDs. |
@@ -292,13 +297,17 @@ Port handles must match the following specifications:
 - Parallel split (`split`):
   - `sourceHandle: "out1"`, `"out2"`, ... -> `targetHandle: "previous"`
 - Barrier synchronization (`sync`):
-  - `sourceHandle: "next"` -> `targetHandle: "in1"`, `"in2"` on `sync` (set `lcaNodeId: "<splitNodeId>"` on `sync`)
+  - `sourceHandle: "next"` -> `targetHandle: "in1"`, `"in2"` on `sync` (data: `{"inputCount": N}`; `lcaNodeId` is optional/legacy — verified live production graphs omit it and only set `inputCount`)
 - Looping (`repeat_until`):
   - Loop body start: `sourceHandle: "loopStart"` -> `targetHandle: "previous"`
   - Loop body close: `sourceHandle: "next"` -> `targetHandle: "loopEnd"`
   - Loop exit: `sourceHandle: "next"` on `repeat_until` -> `targetHandle: "previous"` downstream
-- Error isolation (`try`):
-  - `sourceHandle: "success"` or `"error"`, `targetHandle: "previous"`
+- Error isolation (`try`) — **VERIFIED against a live 5000-node production graph**:
+  - Body start: `sourceHandle: "loopStart"` on `try` -> body node `targetHandle: "previous"`
+  - Body end: last body node `sourceHandle: "next"` -> `targetHandle: "loopEnd"` on `try`
+  - Success continuation: `sourceHandle: "next"` on `try` -> downstream `targetHandle: "previous"`
+  - Error handler: `sourceHandle: "error"` on `try` -> fallback node `targetHandle: "previous"`
+  - ⚠️ `try` does **not** use `success`/`error` for the body boundary — it reuses `loopStart`/`loopEnd` (same handles as `repeat_until`). The `success` handle does not exist.
 
 ### Rule 2: Chain Dependent Variable Evaluations
 Variables defined in the same `storage/set_variable` node are evaluated concurrently. If Variable B references `$variables.A`, Variable A must be set in an earlier `set_variable` node in the sequence.
@@ -318,10 +327,13 @@ Never generate behavior graphs on a single flat horizontal line spanning thousan
   - Lower branch: $Y_{\text{base}} + 140\text{px}$
   - Merge barrier (`sync`, `end_if`): Re-align at $Y_{\text{base}}$ centered between branches.
 - **Loop Offsets (`repeat_until`)**: Place loop body nodes directly above or below the loop controller ($Y_{\text{base}} \pm 140\text{px}$) with `loopStart` and `loopEnd` handles properly paired.
-- **Error Handlers (`try`)**: Place the `error` branch directly below the `success` branch.
+- **Error Handlers (`try`)**: Place the `error` branch directly below the try body (body is delimited by `loopStart`/`loopEnd`, not `success`).
 
 ### Rule 5: Always Filter Participant ID Before Sending Messages
-Before calling `storage/insert_chat_message`, fetch chat participants using `storage/get_chat` (`expand: ["participants"]`) and filter for the AI character using `utilities/filter` (`item.userId === null`). Pass `filterNode.list[0].id` to `insert_chat_message.chatParticipantId`.
+Before calling `storage/insert_chat_message`, fetch chat participants using `storage/get_chat` (`expand: ["participants"]`) and filter for the AI character using `utilities/filter`. Verified live filter conditions:
+- **Bot participant**: `item.userId === null && item.characterId !== null` (the `characterId !== null` guard distinguishes the AI character from other null-user entries)
+- **User participant**: `item.userId !== null`
+Pass `filterNode.list[0].id` to `insert_chat_message.chatParticipantId` and `filterNode.list[0].characterId` to `storage/get_character.characterId`.
 
 ### Rule 6: Error Trapping for External Webhooks
 Wrap network calls (`utilities/http_request`) with `control_flow/try`. Route the `error` port to `storage/broadcast_failed_chat_message` to alert the user without corrupting the chatroom message history.
@@ -356,7 +368,8 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 
 ### Rule 9: Strict World-Character Co-Location & Behavior Binding Prerequisite for Testing
 - **World & Character Co-Location**: When testing or executing behavior pipelines in a World (`worldId`), the character (`characterId`) used for testing **MUST belong to that exact same World**. Using a character from a different World breaks RAG vector lore lookup, context retrieval, and causes permission errors.
-- **Behavior Binding Prerequisite**: Before initiating a chat session or sending test messages (`openrp_send_message`) to trigger the behavior pipeline (`events/chat_message`), the behavior graph **MUST already be explicitly attached/set to that character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`). If the behavior is not attached, OpenRP defaults to generic fallback chat and the behavior pipeline will not execute.
+- **Behavior Binding Prerequisite**: Before testing a behavior pipeline (`events/chat_message`), the behavior graph **MUST already be explicitly attached/set to that character** (via `openrp_deploy_behavior` with `characterId` or `openrp_attach_behavior_to_character`). If the behavior is not attached, OpenRP defaults to generic fallback chat and the behavior pipeline will not execute.
+- **Testing trigger (verified)**: `openrp_send_message` only inserts a message (`POST /api/chats/{chatId}/messages`) and does **not** trigger the behavior engine (`metadata.behaviorExecutionIds` stays `[]`). To execute a behavior via MCP, use `openrp_execute_behavior_debug` (triggerSource `"editor"`), then poll `openrp_get_behavior_execution` + `openrp_get_behavior_node_executions` until `BEHAVIOR_EXECUTION_STATUS_COMPLETED`.
 
 ## 7. Tool Usage Guide: `openrp_edit_behavior_node` vs `openrp_update_behavior`
 
@@ -369,27 +382,27 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 
 ---
 
-## 8. Complete 40 MCP Tools Reference Guide
+## 8. Complete 56 MCP Tools Reference Guide
 
-The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9 operational domains:
+The OpenRP MCP Server exposes **56 high-level developer tools** organized into 9 operational domains:
 
-1. **Authentication & Session** (3 tools): `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
+1. **Authentication & Session** (5 tools): `openrp_auth`, `openrp_web_login`, `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
 3. **Lorebook System** (7 tools): `openrp_list_lores`, `openrp_list_lore_characters`, `openrp_list_character_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
 4. **Character Studio & Factions** (9 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
-6. **Behavior Pipeline Engine** (8 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_render_behavior_mermaid`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
+6. **Behavior Pipeline Engine** (14 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_render_behavior_mermaid`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_list_character_behaviors`, `openrp_detach_behavior_from_character`, `openrp_list_character_group_behaviors`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group`, `openrp_execute_behavior_debug`
 7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
 8. **Chat & Live Messaging** (5 tools): `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
-9. **Discovery, AI Models & Universal Gateway** (3 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`
+9. **Discovery, AI Models & Universal Gateway** (4 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`, `openrp_sync_skills`
 
 ---
-
-## 2. Complete 47 MCP Tools Reference Guide
 
 ### Category 1: Authentication & Profile
 | Tool Name | Parameters | Purpose |
 |---|---|---|
+| `openrp_auth` | *(none)* | Triggers the CLI interactive authentication flow |
+| `openrp_web_login` | *(none)* | Launches the local Quantum Auth Bridge on port 45678 for 1-click browser login |
 | `openrp_set_auth` | `token?`, `refreshToken?`, `userId?`, `worldId?`, `characterId?` | Stores auth credentials, sets active IDs, and starts background auto-refresh daemon |
 | `openrp_refresh_token` | *(none)* | Forces manual Supabase JWT session refresh before token expiry |
 | `openrp_get_me` | *(none)* | Fetches authenticated user account profile, settings, credits, and subscription status |
@@ -453,6 +466,12 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 | `openrp_deploy_behavior` | `userId?`, `worldId?`, `characterId?`, `name`, `handle`, `graph`, `deleteOldBehaviors?` | Atomic deployment and auto-binding of a behavior graph to a character |
 | `openrp_delete_behavior` | `userId?`, `worldId?`, `behaviorId` | Deletes a behavior pipeline from a world |
 | `openrp_attach_behavior_to_character` | `characterId?`, `behaviorId` | Binds a behavior pipeline to an active character |
+| `openrp_list_character_behaviors` | `characterId?` | Lists all behavior graphs currently attached to a character |
+| `openrp_detach_behavior_from_character` | `characterId?`, `behaviorId` | Detaches a specific behavior from a character |
+| `openrp_list_character_group_behaviors` | `groupId` | Lists behaviors attached to a character group |
+| `openrp_attach_behavior_to_character_group` | `groupId`, `behaviorId` | Binds a behavior pipeline to a character group |
+| `openrp_detach_behavior_from_character_group` | `groupId`, `behaviorId` | Detaches a specific behavior from a character group |
+| `openrp_execute_behavior_debug` | `behaviorId`, `chatId?`, `triggerMessageId?` | Executes a behavior pipeline manually for testing |
 
 ### Category 7: Behavior Executions & Debugging Traces
 | Tool Name | Parameters | Purpose |
@@ -476,3 +495,4 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 | `openrp_list_models` | *(none)* | Lists all 38+ available AI models (Claude Opus/Sonnet 4.8, GPT-5.4, Gemini 3.5, Grok 4.5, Kimi k3, DeepSeek) |
 | `openrp_discover_worlds` | `query?`, `page?` | Searches public community worlds (`/api/worlds/discover`) |
 | `openrp_raw_api` | `path`, `method?`, `body?` | Executes arbitrary OpenRP REST API calls with auto-authentication |
+| `openrp_sync_skills` | `targetDir?` | Synchronize latest OpenRP skill definitions to active AI agent directories |

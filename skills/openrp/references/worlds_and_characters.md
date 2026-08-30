@@ -3,15 +3,18 @@
 ## 1. User ID Disambiguation & Authentication Protocol
 
 > [!IMPORTANT]
-> **OpenRP has two distinct user IDs**. Using the wrong ID in route paths or payload properties will result in `HTTP 400 bad_request_body` or `HTTP 403 forbidden`.
+> **OpenRP has two distinct user IDs.** Using the wrong ID in route paths or payload properties will result in `HTTP 400 bad_request_body` or `HTTP 403 forbidden`.
 >
-> 1. **Supabase Auth UID (`auth.uid()` / UUIDv4, e.g., `<user-auth-uuid-v4>`)**:
->    - Found in the JWT payload under `sub` / `user_id` or resolved via `/api/users/me`.
->    - **MUST be used in all user-scoped REST route URLs**: `/api/users/{authUid}/worlds`, `/api/users/{authUid}/worlds/{worldId}/...`
->    - **MUST be used as the `owner` field value** in world creation payloads.
-> 2. **OpenRP Platform Account ID (UUIDv7, e.g., `<user-account-uuid-v7>`)**:
+> 1. **Supabase Auth UID (`auth.uid()` / UUIDv4, e.g., `0d24041d-23b1-465a-9f37-110c0c0729f1`)**:
+>    - Found in the JWT payload under `sub` / `user_id`.
+>    - Used as the `owner` field value in world creation payloads.
+> 2. **OpenRP Platform Account ID (UUIDv7, e.g., `019f4c49-0ec7-7374-8fab-d7e8add428bc`)**:
 >    - Returned in `openrp_get_me.data.id`.
+>    - Appears in `owner.id` / `ownerId` fields across worlds, characters, lores, chats.
 >    - Represents public profiles, follower lists, and chat participant identifiers.
+>
+> > [!NOTE]
+> > **Verified 2026-08-30**: Both IDs are accepted in `/api/users/{userId}/worlds/{worldId}/...` route paths. The platform account ID (UUIDv7) is the safer default for `openrp_set_auth(userId=...)` because it is what `get_me` returns and what appears in every `owner.id`. See `references/authentication.md` §5.2.
 
 ---
 

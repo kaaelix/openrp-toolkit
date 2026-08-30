@@ -1,9 +1,9 @@
 {
   "mcpServers": {
     "openrp": {
-      "command": "python3",
+      "command": "node",
       "args": [
-        "/path/to/openrp-toolkit/mcp/openrp_mcp_server.py"
+        "/path/to/openrp-toolkit/mcp/server.js"
       ],
       "env": {
         "OPENRP_TOKEN": "YOUR_OPENRP_JWT_ACCESS_TOKEN",

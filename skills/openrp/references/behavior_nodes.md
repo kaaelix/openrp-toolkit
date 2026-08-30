@@ -20,11 +20,11 @@ All ReactFlow edges in OpenRP MUST follow the strict edge ID format:
 | :--- | :--- | :--- | :--- |
 | **Standard Nodes** (AI, Storage, Utilities, Events) | `next` | `previous` | Standard linear pipeline flow. |
 | **`control_flow/if`** | `true`, `false` | `previous` | Branches based on boolean `condition`. |
-| **`control_flow/end_if`** | `next` | `in1`, `in2` | Merges branches from an `if` block. Requires `lcaNodeId`. |
+| **`control_flow/end_if`** | `next` | `in1`, `in2` | Merges branches from an `if` block. (`lcaNodeId` optional in current engine — live graphs omit it.) |
 | **`control_flow/split`** | `out1`, `out2`, `out3`, `out4` | `previous` | Parallel branch splitting. Number of outputs matches `outputCount`. |
-| **`control_flow/sync`** | `next` | `in1`, `in2`, `in3`, `in4` | Barrier synchronization. Waits for all inputs to complete. Requires `lcaNodeId`. |
+| **`control_flow/sync`** | `next` | `in1`, `in2`, `in3`, `in4` | Barrier synchronization. Waits for all inputs to complete. Data: `{"inputCount": N}`. (`lcaNodeId` optional in current engine — live graphs omit it.) |
 | **`control_flow/repeat_until`** | `loopStart`, `next` | `previous`, `loopEnd` | Loop control. `loopStart` starts body; last node in body connects `next` -> `loopEnd`. `next` handle exits loop when condition is met. |
-| **`control_flow/try`** | `success`, `error` | `previous` | Error isolation boundary. Succeeded nodes flow from `success`; unhandled crashes route to `error`. |
+| **`control_flow/try`** | `loopStart`, `next`, `error` | `previous`, `loopEnd` | Error isolation boundary. Body starts at `loopStart` and re-enters via `loopEnd`; success continues from `next`; unhandled crashes route to `error`. **There is no `success` handle.** |
 | **`control_flow/wait`** | `next` | `previous` | Pauses execution for `duration` milliseconds. |
 
 ---
@@ -45,8 +45,8 @@ When designing or debugging Behavior Graphs in OpenRP, nodes frequently appear d
 ### 🔴 Failure Mode 2: Missing `lcaNodeId` on Convergence Nodes (`sync` & `end_if`)
 * **Symptom**: The parallel or conditional branches run, but the `sync` or `end_if` node stays pending forever and never triggers downstream nodes.
 * **Root Cause**:
-  * In the OpenRP DAG scheduler, `control_flow/sync` and `control_flow/end_if` nodes **MUST specify `lcaNodeId`** pointing to the originating `control_flow/split` or `control_flow/if` node ID (e.g. `"lcaNodeId": "splitNode1"`).
-  * Without `lcaNodeId`, the barrier synchronization algorithm cannot evaluate if all parallel paths originated from the same ancestor, preventing the barrier from unlocking.
+  * Older OpenRP DAG scheduler versions required `control_flow/sync` and `control_flow/end_if` to specify `lcaNodeId` (pointing to the originating `control_flow/split` or `control_flow/if` node ID, e.g. `"lcaNodeId": "splitNode1"`).
+  * **Current engine (verified 2026-08-30)**: a live 5000-node production graph uses `sync` with only `{"inputCount": 2}` and no `lcaNodeId`, and runs fine. Treat `lcaNodeId` as **optional/legacy** — include it only if the engine rejects a graph without it.
 
 ### 🔴 Failure Mode 3: Upstream Unhandled Runtime Crash Halts Traversal
 * **Symptom**: Step 8 succeeds, but Step 9 and all downstream nodes never execute.
@@ -94,11 +94,11 @@ When designing or debugging Behavior Graphs in OpenRP, nodes frequently appear d
 
 ### C. Control Flow (7 Nodes)
 * `control_flow/if`: Input `previous`, Outputs `true`, `false`. Input: `condition`.
-* `control_flow/end_if`: Inputs `in1`, `in2`, Output `next`. Requires `lcaNodeId`.
+* `control_flow/end_if`: Inputs `in1`, `in2`, Output `next`. (`lcaNodeId` optional/legacy.)
 * `control_flow/split`: Input `previous`, Outputs `out1`, `out2`, ... Input: `outputCount`.
-* `control_flow/sync`: Inputs `in1`, `in2`, ..., Output `next`. Input: `inputCount`, Requires `lcaNodeId`.
+* `control_flow/sync`: Inputs `in1`, `in2`, ..., Output `next`. Input: `inputCount`. (`lcaNodeId` optional/legacy.)
 * `control_flow/repeat_until`: Inputs `previous`, `loopEnd`, Outputs `loopStart`, `next`. Input: `condition`.
-* `control_flow/try`: Input `previous`, Outputs `success`, `error`. Error isolation boundary.
+* `control_flow/try`: Input `previous`, Outputs `loopStart`, `next`, `error`; Input `loopEnd`. Error isolation boundary (body = `loopStart`→`loopEnd`; success = `next`; failure = `error`). No `success` handle.
 * `control_flow/wait`: Input `previous`, Output `next`. Input: `duration` (ms).
 
 ### D. Storage & Database (14 Nodes)

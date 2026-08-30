@@ -51,7 +51,7 @@ This reference documents the exact architecture, DAG topologies, and step execut
                       [control_flow/try]
                                 │
         ┌───────────────────────┴───────────────────────────────┐
-        │ (success branch)                                      │ (error branch)
+        │ (try body: loopStart→loopEnd)                         │ (error branch)
         ▼                                                       ▼
 [ai/llm (stream: true)]                         [storage/broadcast_failed_chat_message]
         │                                                       │

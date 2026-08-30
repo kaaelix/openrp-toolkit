@@ -229,7 +229,7 @@ This exhaustive technical reference provides the **exact runtime output JSON pay
   "data": {}
 }
 ```
-* **Requirement**: Must declare `lcaNodeId` pointing to originating `control_flow/split`.
+* **Requirement**: `inputCount` only (verified live). `lcaNodeId` is optional/legacy.
 
 ---
 

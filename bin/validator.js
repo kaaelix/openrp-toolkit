@@ -135,6 +135,13 @@ function validateBehaviorGraph(graph) {
       }
     }
 
+    // Zod Schema Check: utilities/join
+    if (node.type === 'utilities/join') {
+      if (node.data?.outputProperty === 'string') {
+        issues.errors.push(`utilities/join node "${node.id}" output property is 'text'. Never reference '.string'.`);
+      }
+    }
+
     // Zod Schema Check: storage/insert_chat_message
     if (node.type === 'storage/insert_chat_message') {
       if (node.data?.participantId && !node.data?.chatParticipantId) {
@@ -144,8 +151,8 @@ function validateBehaviorGraph(graph) {
 
     // Zod Schema Check: storage/update_typing_status
     if (node.type === 'storage/update_typing_status') {
-      if (node.data?.chatParticipantId && !node.data?.participantId) {
-        issues.errors.push(`Node "${node.id}" (storage/update_typing_status) uses chatParticipantId. In OpenRP, update_typing_status MUST use participantId.`);
+      if (node.data?.participantId && !node.data?.chatParticipantId) {
+        issues.errors.push(`Node "${node.id}" (storage/update_typing_status) uses participantId. In OpenRP, update_typing_status MUST use chatParticipantId.`);
       }
     }
 
@@ -177,7 +184,24 @@ function validateBehaviorGraph(graph) {
       }
     }
     checkExpressions(node.data);
+    // [SENIOR LINTER] Monotonic X-Coordinate Rule (Canvas Geometry Smell)
+    outs.forEach(edge => {
+      const targetNode = nodeMap.get(edge.target);
+      // Skip loop returns (loopEnd) which naturally go backwards
+      if (targetNode && targetNode.position && node.position && edge.targetHandle !== 'loopEnd') {
+        if (targetNode.position.x <= node.position.x && node.position.x - targetNode.position.x > 50) {
+           issues.warnings.push(`Code Smell (Layout): Edge "${edge.id}" goes backwards. Source "${node.id}" (X:${Math.round(node.position.x)}) -> Target "${targetNode.id}" (X:${Math.round(targetNode.position.x)}). Violates Monotonic X-Coordinate rule.`);
+        }
+      }
+    });
   });
+
+  // [SENIOR LINTER] Defensive Programming Check
+  const hasRiskyNodes = nodes.some(n => n.type === 'ai/llm' || n.type === 'utilities/http_request');
+  const hasTryCatch = nodes.some(n => n.type === 'control_flow/try');
+  if (hasRiskyNodes && !hasTryCatch) {
+    issues.warnings.push('Defensive Programming Violation: Graph contains risky network/LLM nodes but no control_flow/try blocks. Wrap them to prevent silent failures.');
+  }
 
   return issues;
 }

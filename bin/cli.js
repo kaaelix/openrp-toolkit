@@ -151,7 +151,14 @@ const PLATFORMS = [
     },
     installSkill: (targetDir) => {
       const dest = targetDir || path.join(os.homedir(), '.agents', 'skills', 'openrp');
-      const count = copyDirSync(SKILLS_DIR, dest);
+      let count = copyDirSync(SKILLS_DIR, dest);
+      
+      const RULES_DIR = path.join(PACKAGE_ROOT, '.agents', 'rules');
+      if (fs.existsSync(RULES_DIR)) {
+        const rulesDest = path.join(os.homedir(), '.agents', 'rules');
+        count += copyDirSync(RULES_DIR, rulesDest);
+      }
+      
       return { type: 'skill', count, dest };
     },
     installMcp: () => {

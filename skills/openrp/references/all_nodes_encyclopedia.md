@@ -288,14 +288,13 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
 * **Description**: Synchronization barrier that pauses execution until all parallel input branches arrive.
 * **Inputs**:
   * `inputCount` (`integer`, optional, default: 2).
-  * `lcaNodeId` (`string`, required): Node ID of the originating `split` node.
+  * `lcaNodeId` (`string`, **optional/legacy**): Node ID of the originating `split` node. Verified live production graphs omit it and only set `inputCount`.
 * **Ports**: Inputs `in1`, `in2`, ... | Output `next`.
 * **Example**:
 ```json
 {
   "id": "syncPipeline",
   "type": "control_flow/sync",
-  "lcaNodeId": "splitPipeline",
   "data": {
     "inputCount": 2
   }
@@ -307,7 +306,7 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
 ### 15. `control_flow/repeat_until`
 * **Description**: While/Repeat-until loop controller. Executes loop body while condition is true.
 * **Inputs**:
-  * `condition` (`boolean expression`, required).
+  * `expression` (`boolean expression`, required). ⚠️ Verified 2026-08-30: the field is **`expression`**, NOT `condition` (older docs said `condition` — that fails with a Zod `invalid_type` error).
   * `checkConditionBeforeRunning` (`boolean`, optional, default: false).
 * **Ports**: Inputs `previous`, `loopEnd` | Outputs `loopStart`, `next`.
 * **Example**:
@@ -316,7 +315,7 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
   "id": "streamPollingLoop",
   "type": "control_flow/repeat_until",
   "data": {
-    "condition": { "$expression": "!pollStreamSnapshot.isFinished" }
+    "expression": { "$expression": "!pollStreamSnapshot.isFinished" }
   }
 }
 ```
@@ -325,7 +324,11 @@ This document is the authoritative encyclopedia for all 37 nodes in the OpenRP B
 
 ### 16. `control_flow/try`
 * **Description**: Protected execution boundary. Catches errors from downstream nodes and exposes failure details.
-* **Ports**: Input `previous` | Outputs `success`, `error`.
+* **Ports**: Input `previous`, `loopEnd` | Outputs `loopStart`, `next`, `error`.
+  * Body: `loopStart` → first body node `previous`; last body node `next` → `loopEnd`.
+  * Success continuation: `next`.
+  * Error handler: `error`.
+  * ⚠️ There is **no** `success` handle (verified against live production graph).
 * **Outputs**:
   * `error` (`object`): `{ code: string, message: string, nodeId: string, nodeType: string }`.
 * **Example**:

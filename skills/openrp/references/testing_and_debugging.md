@@ -121,7 +121,8 @@ Every message generated in OpenRP contains an execution trace link:
 ### C. HTTP 403: Forbidden
 - Root Cause 1: Access Tier Constraint. Attempting to create or update a World with `"visibility": "private"` using a Free account (Free accounts only permit `"public"` and `"unlisted"`).
 - Root Cause 2: Resource Ownership. Attempting to edit or delete characters, lore, or behaviors belonging to another user's world.
-- Resolution: Switch visibility to `"unlisted"` or upgrade the account to Pro.
+- Root Cause 3 (verified 2026-08-30): **Expired access token**. `GET /api/worlds/my-worlds` returns `{"data":null,"error":{"code":"user_not_authorized"}}` and `GET /api/users/me` returns `{"data":null,"error":null}` when the JWT is expired/invalid. Fix: `openrp_refresh_token`.
+- Resolution: Switch visibility to `"unlisted"` or upgrade the account to Pro. For expired tokens, refresh first.
 
 ### D. HTTP 404: Not Found
 - Root Cause: Target resource ID (`worldId`, `characterId`, `loreId`, or `behaviorId`) does not exist or was deleted.
