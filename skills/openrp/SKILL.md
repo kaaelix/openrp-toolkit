@@ -107,6 +107,7 @@ When updating the `openrp` skill:
 
 ### 6. Mandatory Debugging & Verification-to-Completion Protocol
 When an OpenRP-related problem occurs or when modifying/testing any Behavior Graph:
+- **Visual Debugging**: Whenever you are asked to analyze, debug, or explain a behavior graph, ALWAYS call `openrp_render_behavior_mermaid` first to generate a visual diagram in the chat so both you and the user can see the topological flow clearly.
 1. **Never Assume or Claim Success Without Evidence**: Never claim a fix or behavior is working based solely on deployment. You must verify actual runtime execution traces.
 2. **Execute Live Trigger**: Trigger the behavior via `POST /api/chats/{chatId}/messages` or test input.
 3. **Poll Execution Run Status**:
@@ -377,7 +378,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 3. **Lorebook System** (7 tools): `openrp_list_lores`, `openrp_list_lore_characters`, `openrp_list_character_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
 4. **Character Studio & Factions** (9 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
-6. **Behavior Pipeline Engine** (7 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
+6. **Behavior Pipeline Engine** (8 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_render_behavior_mermaid`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`
 7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
 8. **Chat & Live Messaging** (5 tools): `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
 9. **Discovery, AI Models & Universal Gateway** (3 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`
@@ -446,6 +447,7 @@ The OpenRP MCP Server exposes **40 high-level developer tools** organized into 9
 |---|---|---|
 | `openrp_list_behaviors` | `userId?`, `worldId?` | Lists all behavior graphs in a world |
 | `openrp_get_behavior` | `userId?`, `worldId?`, `behaviorId` | Retrieves full Behavior Graph JSON (nodes, edges, expressions) |
+| `openrp_render_behavior_mermaid` | `behaviorId` | Renders a complex JSON behavior graph into a Mermaid.js diagram for easy visual debugging. |
 | `openrp_update_behavior` | `userId?`, `worldId?`, `behaviorId`, `name?`, `handle?`, `graph` | In-place update of an existing Behavior Graph without losing character bindings |
 | `openrp_edit_behavior_node` | `userId?`, `worldId?`, `behaviorId`, `nodeId`, `nodeData` | Granular in-place edit of a single node's data/expressions |
 | `openrp_deploy_behavior` | `userId?`, `worldId?`, `characterId?`, `name`, `handle`, `graph`, `deleteOldBehaviors?` | Atomic deployment and auto-binding of a behavior graph to a character |
