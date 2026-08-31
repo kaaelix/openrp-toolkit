@@ -1,8 +1,8 @@
 # OpenRP Developer Toolkit & Model Context Protocol (MCP) Server
 
-[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.2.0-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
+[![OpenRP Suite](https://img.shields.io/badge/OpenRP-v1.3.0-00E5FF?style=for-the-badge&logo=openai&logoColor=white)](https://openrp.ai)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Standard%202024--11--05-7C4DFF?style=for-the-badge)](https://modelcontextprotocol.io)
-[![npm version](https://img.shields.io/badge/npm-v1.2.0-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
+[![npm version](https://img.shields.io/badge/npm-v1.2.1-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/openrp-toolkit)
 [![Node.js 18+](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-kaaelix-FF4081?style=for-the-badge)](https://github.com/kaaelix)
@@ -13,30 +13,39 @@
 ---
 
 > [!NOTE]
-> **Community Release Notice (v1.2.0)**:
-> Version `1.2.0` introduces the 1-Click Eruda-Style Auth Bridge (`http://127.0.0.1:45678/bridge.js`), Native OpenRP.ai In-Page Window Authorization ("Is this you?"), chunked Base64 Supabase cookie auto-extraction, and MCP `openrp_auth` integration.
-> If you encounter any bugs or have feature suggestions, please file an issue or contribute directly on GitHub:
+> **Community Release Notice (v1.3.0)**:
+> Version `1.3.0` introduces the complete **Autonomous Behavior Engineering Suite**:
+> 1. **Zero-Dependency Auto-Layout Engine** (`openrp_beautify_graph`) for clean, monotonic ReactFlow canvas layouts.
+> 2. **Mermaid.js Visual Graph Renderer** (`openrp_render_behavior_mermaid` & `openrp render <id>`) for CLI and AI visual debugging.
+> 3. **Behavior Graph Scaffolder** (`openrp_scaffold_behavior_graph`) supporting 4 verified production blueprints (Sequential, Branching, State Machine, Looping).
+> 4. **Autonomous QA & Auto-Debugger** (`openrp_test_and_heal_behavior`) with live execution polling and failing node diagnostic extraction.
+> 5. **Smart Static Linter & Edge Routing** (`bin/validator.js`) enforcing strict port handle contracts and duplicate edge prevention.
+> 6. **1-Click Eruda Auth Bridge** with Supabase cookie auto-extraction and auto-refresh daemon.
+>
+> If you encounter any bugs or have feature suggestions, please file an issue or contribute directly on GitHub:  
 > **https://github.com/kaaelix/openrp-toolkit**
 
 ---
 
 ## Executive Overview
 
-**OpenRP Toolkit** is a Model Context Protocol (MCP) server and AI Agent Skill suite engineered for **[OpenRP.ai](https://openrp.ai)**. It empowers AI coding assistants and agent environments—including **Google Antigravity**, **Gemini CLI**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **OpenAI Codex**—to autonomously architect, deploy, test, trace, and debug interactive roleplay universes, autonomous AI personas, 38-node behavior graphs, semantic vector lorebooks, confidential exclusive lore, prompt templates, and multi-agent group chatrooms.
+**OpenRP Toolkit** is a Model Context Protocol (MCP) server and AI Agent Skill suite engineered for **[OpenRP.ai](https://openrp.ai)**. It empowers AI coding assistants and agent environments—including **Google Antigravity**, **Gemini CLI**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **OpenAI Codex**—to autonomously architect, scaffold, deploy, test, trace, and debug interactive roleplay universes, autonomous AI personas, 38-node behavior graphs, semantic vector lorebooks, confidential exclusive lore, prompt templates, and multi-agent group chatrooms.
 
 ---
 
 ## Key Capabilities
 
-* **56 Comprehensive MCP Tools**: Full operational coverage across 10 distinct domains (1-Click Auth & Gateway, Worlds, Lorebook & Exclusive Access, Characters, Character Groups & Factions, Prompts, Behavior Graphs, Tracing, Chatrooms, and Foundation AI Models).
+* **60 Comprehensive MCP Tools**: Full operational coverage across 9 distinct developer domains (Authentication, Worlds, Lorebooks, Characters & Factions, Prompts, Behavior Engine & Scaffolding, Tracing & QA Diagnostics, Chatrooms, and AI Models).
+* **Text-to-Graph Behavior Scaffolding (`openrp_scaffold_behavior_graph`)**: Instantly generates production-grade behavior graphs from high-level prompts using 4 verified blueprints (Sequential Chain, Branching Router, State Machine, and Resilient Looper).
+* **Zero-Dependency Auto-Layout Engine (`openrp_beautify_graph`)**: Automatically calculates topological layer coordinates ($X, Y$) to produce beautiful, non-overlapping canvas graphs without external graph libraries.
+* **Mermaid.js Visual Renderer (`openrp_render_behavior_mermaid` & CLI `openrp render`)**: Converts complex JSON graphs into clean visual flowcharts in chat or terminal.
+* **Autonomous QA & Self-Healing Engine (`openrp_test_and_heal_behavior`)**: Dispatches test messages into live chats, monitors background execution status, and extracts failing node error payloads for automated hotfixing.
+* **Smart Static Linter & Schema Validator (`bin/validator.js`)**: Validates ReactFlow edge port contracts, duplicate edge connections, JEXL regex safety, and node Zod schemas.
 * **1-Click Eruda-Style Auth Bridge (`bridge.js`)**: Inject a native OpenRP.ai in-page confirmation window with user avatar, name, and handle directly on `openrp.ai`.
 * **Bulletproof Chunked Cookie Reconstruction**: Automatically stitches and decodes Supabase multi-chunk base64 auth tokens (`sb-*-auth-token.0`, `.1`, etc.).
-* **Pure Node.js Engine (Zero External Dependencies)**: Built entirely using Node.js 18+ native `fetch` and standard library modules. No compilation, external SDKs, or Python runtimes required.
-* **Autonomous Background Token Refresh Daemon**: Automatically refreshes Supabase JWT authentication every 45 minutes to maintain active sessions.
-* **Full 38-Node Behavior Engine Palette**: Support for all OpenRP node types (Events, AI Models, Control Flow, Storage, Utilities, Streaming, Try-Catch).
-* **Deterministic ReactFlow Sanitization**: Automatically normalizes edge IDs (`xy-edge__<source><sourceHandle>-<target><targetHandle>`) and coordinates to prevent graph layout collapse.
-* **Multi-Agent Group Orchestration**: Blueprints for Mention Gates, Round-Robin turn cycling, and Game Master Arbiter state machines.
-* **Interactive CLI Installer with Auto-Detection**: Single command setup for all AI assistants via `npx openrp-toolkit install`.
+* **Pure Node.js Engine (Zero External Runtime Dependencies)**: Built entirely using Node.js 18+ native `fetch` and standard library modules.
+* **Autonomous Background Token Refresh Daemon**: Automatically refreshes Supabase JWT authentication every 45 minutes.
+* **Interactive CLI Installer with Auto-Detection**: Single command setup for all AI assistants via `npx openrp-toolkit install` or `openrp sync`.
 
 ---
 
@@ -77,11 +86,14 @@ npm install -g openrp-toolkit
 
 After installation, run any of the available commands:
 ```bash
-openrp install    # Run interactive assistant installer
-openrp doctor     # Run diagnostic checks (4-point health verification)
-openrp auth       # Set up OpenRP authentication via 1-Click Bridge or Manual Token
-openrp list       # Browse catalog of all 56 MCP tools & skills
-openrp serve      # Launch stdio MCP server process
+openrp install           # Run interactive assistant installer
+openrp doctor            # Run diagnostic checks (4-point health verification)
+openrp auth              # Set up OpenRP authentication via 1-Click Bridge or Manual Token
+openrp list              # Browse catalog of all 60 MCP tools & skills
+openrp render <id>       # Render a behavior graph to Mermaid.js in your terminal
+openrp validate <file>   # Validate a behavior graph JSON against static linter rules
+openrp sync              # Synchronize skills & rules across all installed agent platforms
+openrp serve             # Launch stdio MCP server process
 ```
 
 ---
@@ -96,9 +108,9 @@ claude mcp add openrp npx -y openrp-toolkit serve
 ```
 
 #### 2. Google Antigravity & Gemini CLI (`agy`)
-* **Step A (Skill Definition)**:
+* **Step A (Skill Definition & Rules)**:
   ```bash
-  mkdir -p ~/.agents/skills/openrp
+  mkdir -p ~/.agents/skills/openrp ~/.agents/rules
   npx openrp-toolkit install # Select option [3] or [1]
   ```
 * **Step B (MCP Server in `~/.gemini/antigravity-cli/mcp_config.json`)**:
@@ -160,7 +172,7 @@ Add to `claude_desktop_config.json`:
 
 ## Authentication & 1-Click Bridge Architecture
 
-OpenRP utilizes Supabase authentication. In `v1.2.0`, authentication is seamlessly integrated with a 1-click in-page confirmation flow.
+OpenRP utilizes Supabase authentication. In `v1.3.0`, authentication is seamlessly integrated with a 1-click in-page confirmation flow.
 
 ### Option A: 1-Click Eruda-Style Bridge (Fastest & Easiest)
 
@@ -208,7 +220,7 @@ npx openrp-toolkit doctor
 
 Output:
 ```
-┌  OpenRP Toolkit & MCP Suite (v1.2.0)
+┌  OpenRP Toolkit & MCP Suite (v1.3.0)
 │  Maintainer: kaaelix (https://github.com/kaaelix)
 │  Platform: https://openrp.ai
 └───────────────────────────────────────────────────────────────
@@ -216,7 +228,7 @@ Output:
 Running OpenRP Toolkit Diagnostics...
 
 [CHECK 1/4] Node.js Runtime: v22.x (Native fetch support) -> OK
-[CHECK 2/4] Package Integrity & Skill Files -> OK (56 MCP tools ready)
+[CHECK 2/4] Package Integrity & Skill Files -> OK (60 MCP tools ready)
 [CHECK 3/4] Authentication State -> OK (User ID: 019f4c49-0ec7-7374-8fab-d7e8add428bc)
 [CHECK 4/4] Testing connection to https://openrp.ai...
             OpenRP API Endpoint: HTTP 401 -> OK
@@ -229,127 +241,95 @@ Running OpenRP Toolkit Diagnostics...
 
 ---
 
-## AI Agent Slash Commands (`/openrp-toolkit` & `/openrp`)
-
-When using AI coding assistants like **Google Antigravity**, **Gemini CLI**, **Claude Code**, or **Cursor**, you can control the entire OpenRP ecosystem directly using the `/openrp-toolkit` or `/openrp` slash command:
-
-```
-/openrp-toolkit [subcommand] [arguments...]
-```
-
-### Complete Subcommand Routing Matrix
-
-| Subcommand | Parameters / Actions | Description & MCP Routing |
-|---|---|---|
-| `/openrp-toolkit init` | `[token]` | Interactive authentication setup & JWT auto-refresh daemon initialization (`openrp_set_auth`, `openrp_get_me`). |
-| `/openrp-toolkit world` | `list` / `get` / `create` / `update` / `readme` / `delete` | Manage World universes, settings, statistics, and 5,000-word Markdown README documentation. |
-| `/openrp-toolkit lore` | `list` / `create` / `update` / `delete` / `access` | Architect factual semantic lorebook entries with support for confidential exclusive lore (`isExclusive: true`). |
-| `/openrp-toolkit character`| `list` / `get` / `create` / `update` / `delete` | Construct autonomous AI character personas, greetings, and dialog presets. |
-| `/openrp-toolkit group` | `list` / `create` / `update` / `delete` | Group characters into factions, guilds, combat squads, or organizational units (`openrp_character_groups`). |
-| `/openrp-toolkit prompt` | `list` / `get` / `create` / `delete` | Create and maintain reusable prompt templates with variable injection (`{{reply_char.name}}`). |
-| `/openrp-toolkit behavior`| `list` / `deploy` / `get` / `edit-node` / `attach` / `delete` | Deploy and surgically modify 38-node ReactFlow behavior graphs with automated graph sanitization. |
-| `/openrp-toolkit group-chat` | `mention-gate` / `round-robin` / `game-master` | Deploy coordinated multi-agent group chat topologies with turn management gates. |
-| `/openrp-toolkit trace` | `search` / `get <id>` / `nodes <id>` | Inspect live behavior execution logs, status (`COMPLETED`/`FAILED`), and step-by-step resolved node outputs. |
-| `/openrp-toolkit chat` | `create` / `list` / `get` / `messages` / `send` | Create test chatrooms, inspect conversation histories, and dispatch live trigger messages. |
-| `/openrp-toolkit doctor` | *(none)* | Execute 4-point diagnostic verification on runtime, package files, authentication, and API endpoints. |
-
-### Practical Slash Command Invocation Examples:
-
-* **Deploy an NPC character and behavior graph**:
-  ```
-  /openrp-toolkit character create "Eldrin the Sage" "eldrin"
-  /openrp-toolkit behavior deploy "Eldrin Combat Logic" "eldrin-combat"
-  ```
-* **Update world documentation with rich Markdown**:
-  ```
-  /openrp-toolkit world readme
-  ```
-* **Debug a failed behavior execution**:
-  ```
-  /openrp-toolkit trace nodes 01a042e6-7f5a-75ea-a2da-2756ed0a2cf5
-  ```
-* **Add confidential secret lore accessible only by Eldrin**:
-  ```
-  /openrp-toolkit lore create "Ancient Relic Map" "relic-map" "Hidden inside the elder crypt..." --exclusive
-  ```
-
----
-
-## Complete 56 MCP Tools Reference Suite
+## Complete 60 MCP Tools Reference Suite
 
 | No | Category | Count | Tool Names & Summary |
 |---|---|---|---|
-| 1 | Authentication & Gateway | 5 Tools | `openrp_auth`, `openrp_web_login`, `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me` |
+| 1 | Authentication & Session | 5 Tools | `openrp_auth`, `openrp_web_login`, `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me` |
 | 2 | World Management | 6 Tools | `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world` |
 | 3 | Lorebook System & Exclusivity | 7 Tools | `openrp_list_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`, `openrp_list_lore_characters`, `openrp_list_character_lores` |
 | 4 | Character Studio & Factions | 9 Tools | `openrp_list_characters`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group` |
 | 5 | Prompt Templates | 4 Tools | `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt` |
-| 6 | Behavior Engine | 9 Tools | `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_detach_behavior_from_character`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group` |
-| 7 | Tracing & Debugging | 4 Tools | `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`, `openrp_execute_behavior_debug` |
-| 8 | Chat & Messaging | 5 Tools | `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message` |
-| 9 | Skills & Synchronization | 2 Tools | `openrp_sync_skills`, `openrp_raw_api` |
-| 10 | AI Models & Discovery | 2 Tools | `openrp_list_models`, `openrp_discover_worlds` |
+| 6 | Behavior Pipeline Engine | 16 Tools | `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_detach_behavior_from_character`, `openrp_list_character_behaviors`, `openrp_list_character_group_behaviors`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group`, `openrp_execute_behavior_debug`, `openrp_render_behavior_mermaid`, `openrp_beautify_graph`, `openrp_scaffold_behavior_graph` |
+| 7 | Behavior Executions & QA Debugging | 4 Tools | `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`, `openrp_test_and_heal_behavior` |
+| 8 | Chat & Live Messaging | 5 Tools | `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message` |
+| 9 | Discovery, AI Models & Gateway | 4 Tools | `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`, `openrp_sync_skills` |
 
 ---
 
-## Complete 38 Behavior Nodes Architecture
+## 4 Production Behavior Graph Blueprints
 
-OpenRP behavior pipelines support 38 specialized ReactFlow node types organized across 7 categories:
+OpenRP Toolkit includes 4 standardized, production-tested architectural blueprints in [`skills/openrp/references/blueprints.md`](skills/openrp/references/blueprints.md):
 
+### 1. Sequential Defensive LLM Chain
+```mermaid
+graph LR
+    chatEvent["[events/chat_message]"] -->|next| tryBlock["[control_flow/try]"]
+    tryBlock -->|loopStart| llmGenerate["[ai/llm] Generate Response"]
+    llmGenerate -->|next| tryBlock
+    tryBlock -->|next| insertReply["[storage/insert_chat_message]"]
+    tryBlock -->|error| insertFallback["[storage/insert_chat_message] Error Fallback"]
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       OPENRP BEHAVIOR ENGINE (38 NODES)                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 1. EVENTS       : chat_message                                              │
-│ 2. AI / LLM     : llm, generate_image, classify_text, extract_json          │
-│ 3. CONTROL FLOW : if, end_if, loop, end_loop, break, continue, switch,       │
-│                   case, try, catch, end_try, throw                          │
-│ 4. STORAGE      : get_chat, insert_chat_message, update_chat_message,       │
-│                   search_lore, get_character, update_variable, get_variable │
-│ 5. UTILITIES    : code_execution, template, filter, sort, transform, math,  │
-│                   regex_match, regex_replace, delay, http_request           │
-│ 6. CONTEXT      : get_current_time, get_chat_history, get_user_profile      │
-│ 7. STREAMING    : stream_text, read_stream                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+### 2. Branching Sentiment & Intent Router
+```mermaid
+graph LR
+    chatEvent["[events/chat_message]"] -->|next| intentIf["[control_flow/if] Intent Filter"]
+    intentIf -->|true| llmHelp["[ai/llm] Helpful Persona"]
+    intentIf -->|false| llmDefault["[ai/llm] Default Persona"]
+    llmHelp -->|next| endIf["[control_flow/end_if]"]
+    llmDefault -->|next| endIf
+    endIf -->|next| insertReply["[storage/insert_chat_message]"]
+```
+
+### 3. State Machine & Persistent Memory Manager
+```mermaid
+graph LR
+    chatEvent["[events/chat_message]"] -->|next| getVar["[storage/get_variable] Load State"]
+    getVar -->|next| checkState["[control_flow/if] State Check"]
+    checkState -->|true| incState["[storage/set_variable] Mutate State"]
+    checkState -->|false| initState["[storage/set_variable] Init State"]
+    incState -->|next| endIf["[control_flow/end_if]"]
+    initState -->|next| endIf
+    endIf -->|next| llmGen["[ai/llm] Contextual Generation"]
+    llmGen -->|next| insertReply["[storage/insert_chat_message]"]
+```
+
+### 4. Resilient Scheduled Looper & Polling Worker
+```mermaid
+graph LR
+    cronEvent["[events/cron] */5 * * * *"] -->|next| initPollState["[storage/set_variable] Init pollSuccess"]
+    initPollState -->|next| pollLoop["[control_flow/repeat_until]"]
+    pollLoop -->|loopStart| tryBlock["[control_flow/try]"]
+    tryBlock -->|loopStart| httpPoll["[utilities/http_request] GET Health"]
+    httpPoll -->|next| tryBlock
+    tryBlock -->|next| checkStatus["[control_flow/if] Status == 200"]
+    checkStatus -->|true| setSuccess["[storage/set_variable] pollSuccess = true"]
+    checkStatus -->|false| setRetry["[storage/set_variable] pollSuccess = false"]
+    setSuccess -->|next| endIf["[control_flow/end_if]"]
+    setRetry -->|next| endIf
+    endIf -->|next| pollLoop
+    tryBlock -->|error| insertError["[storage/insert_chat_message] Network Error Alert"]
+    pollLoop -->|next| insertAlert["[storage/insert_chat_message] Polling Success"]
 ```
 
 ---
 
-## Multi-Agent Group Chat Coordination Blueprints
+## Static Linter & Behavior Invariants (`bin/validator.js`)
 
-When multiple AI characters join the same chatroom, avoid reply storms and infinite trigger loops by using one of three proven coordination architectures:
-
-### Blueprint 1: Mention-Gated Activation
-The character evaluates whether its name or `@handle` is present before triggering LLM generation:
-```
-[events/chat_message]
-       │
-       ▼
-[storage/get_chat] (expand: ["participants"])
-       │
-       ▼
-[utilities/filter (botFilter)] (expr: item.characterId === myCharId)
-       │
-       ▼
-[control_flow/if (mentionGate)]
-       ├── [True Branch]  ──► [ai/llm] ──► [storage/insert_chat_message]
-       └── [False Branch] ──► [control_flow/end_if] (Halt silently)
+Run the static linter before deploying any behavior graph:
+```bash
+node bin/validator.js path/to/behavior-graph.json
 ```
 
-### Blueprint 2: Round-Robin Turn Cycling
-Bots take turns participating in group discussions. A bot only speaks if the last speaker was a human or a different bot:
-```javascript
-// In control_flow/if node:
-getChatMessage.chatParticipantId !== botFilter.list[0].id && getChatParticipant.userId !== null
-```
-
----
-
-## World Visibility Policy (Official Developer Notice)
-
-* **`WORLD_VISIBILITY_PUBLIC` (Default)**: Visible in global explore feeds, community discover queries, and public profile listings for all users.
-* **`WORLD_VISIBILITY_UNLISTED`**: Accessible directly via URL slug.
-* **`WORLD_VISIBILITY_PRIVATE`**: **Requires OpenRP Plus/Pro Plan** (`metadata.isPlus === true`). Free tier accounts attempting private visibility will be rejected by the backend.
+**Validated Invariants**:
+1. **Single Root Trigger Rule**: Exactly 1 event node per behavior (`events/chat_message` or `events/cron`).
+2. **ReactFlow Edge Handle Contracts**: Strict verification of valid socket ports (`try` $\to$ `loopStart`/`loopEnd`/`error`/`next`, `if` $\to$ `true`/`false`, `split` $\to$ `out1..N`, `sync` $\to$ `in1..N`).
+3. **Duplicate Edge Prevention**: Flags duplicate connections between the same source and target handles.
+4. **Monotonic X Canvas Geometry**: Warns against backwards-flowing cables ($\Delta X \le -50\text{px}$) while exempting `loopEnd`.
+5. **Participant ID Contract**: Enforces `chatParticipantId` for `storage/insert_chat_message` and `participantId` for `storage/update_typing_status`.
+6. **Defensive LLM/HTTP Wrapping**: Warns when volatile network or AI nodes are not enclosed in `control_flow/try`.
+7. **JEXL Regex Safety**: Blocks illegal JavaScript regex literals in expressions.
 
 ---
 
@@ -357,40 +337,53 @@ getChatMessage.chatParticipantId !== botFilter.list[0].id && getChatParticipant.
 
 ```
 openrp-toolkit/
-├── package.json                       # NPM package configuration (v1.2.0)
+├── package.json                       # NPM package configuration (v1.2.1)
 ├── openrp-auth.user.js                # Browser userscript for auto-auth bridge
-├── bin/
-│   ├── cli.js                         # Node.js CLI executable (stdio MCP runner & installer)
-│   └── validator.js                   # Static Behavior Graph Analyzer & Schema Linter
-├── README.md                          # Master documentation & installation guide
+├── install.sh                         # 1-Line curl installer script
 ├── LICENSE                            # MIT Open Source License
+├── README.md                          # Master documentation & architecture guide
+├── bin/
+│   ├── cli.js                         # Node.js CLI (Installer, Doctor, Auth, Render, Stdio MCP)
+│   ├── validator.js                   # Static Behavior Graph Analyzer & Schema Linter
+│   ├── release.js                     # Release management & version bumping
+│   ├── behavior_runtime_verifier.js   # Live behavior runtime validator
+│   ├── layout_styler.js               # Canvas layout & edge styling utility
+│   ├── generate_image_behavior.js     # Image generation behavior generator
+│   └── generate_mythic_rpg.js         # Mythic RPG game engine generator
+├── lib/
+│   ├── graph_scaffolder.js            # Programmatic Text-to-Graph Blueprint Scaffolder
+│   ├── layout_engine.js               # Zero-dependency Topological Auto-Layout Engine
+│   └── mermaid_renderer.js            # OpenRP JSON to Mermaid.js Flowchart Renderer
 ├── mcp/
-│   ├── server.js                      # Pure Node.js 56-Tool MCP JSON-RPC Server
-│   └── mcp_config.example.json        # Example client configuration
+│   ├── server.js                      # Pure Node.js 60-Tool MCP JSON-RPC Server
+│   └── mcp_config.example.json        # Example MCP client configuration
 ├── examples/                          # Pure Node.js code examples & verified blueprints
-│   ├── create_world_and_character.js
-│   ├── deploy_game_bot.js
-│   ├── deploy_eco_roleplay_bot.js
-│   ├── deploy_multi_agent_arena.js
-│   └── debug_behavior_execution.js
-├── skills/
-│   └── openrp/
-│       ├── SKILL.md                   # AI Agent Skill Definition & Master Protocol
-│       ├── commands/                  # AI Slash Command Definitions (/openrp-toolkit)
-│       │   ├── openrp-toolkit.md
-│       │   └── openrp.md
-│       └── references/
-│           ├── authentication.md           # 1-Click Bridge & Supabase Chunked Cookies
-│           ├── all_nodes_encyclopedia.md   # Exhaustive 37-Node Manual with JSON Examples
-│           ├── behavior_nodes.md           # 37-Node Palette & Zero-LLM Game Machine
-│           ├── token_optimization_and_modes.md # User-controlled Eco vs Full mode (78% savings)
-│           ├── rag_and_memory.md           # Vector RAG & Character Long-Term Memory (LTM)
-│           ├── advanced_patterns.md        # HTTP Webhook Polling & Structured JSON RPG
-│           ├── expressions_and_templates.md # JEXL expressions, Math, & Date.format()
-│           ├── streaming_and_registry.md   # Real-time LLM Streaming & Semver Registry
-│           ├── group_orchestration.md      # Multi-agent group chat architecture
-│           ├── testing_and_debugging.md    # DAG diagnostics & execution tracing
-│           └── worlds_and_characters.md    # World/Character/Prompt schemas & Config
+│   └── create_world_and_character.js
+├── tests/                             # Full Jest Unit Test Suite (20/20 Passing)
+│   ├── graph_scaffolder.test.js
+│   ├── layout_engine.test.js
+│   ├── mermaid_renderer.test.js
+│   └── validator.test.js
+├── .agents/
+│   └── rules/
+│       └── openrp-behavior-invariants.md # Auto-synced agent invariant rules
+└── skills/
+    └── openrp/
+        ├── SKILL.md                   # Master AI Agent Skill Definition & SOP
+        ├── commands/                  # AI Slash Command Definitions (/openrp)
+        │   └── openrp.md
+        └── references/                # Modular Technical Reference Library (18 Guides)
+            ├── authentication.md           # 1-Click Bridge & Supabase Chunked Cookies
+            ├── blueprints.md               # 4 Production Behavior Graph Blueprints
+            ├── all_nodes_encyclopedia.md   # Exhaustive 37-Node Manual with JSON Examples
+            ├── behavior_nodes.md           # 37-Node Palette & Zero-LLM Game Machine
+            ├── verified_node_schemas.md    # Verified Zod input/output schemas
+            ├── canvas_layouts_and_edge_styles.md # Canvas geometry & ReactFlow edge styling
+            ├── expressions_and_templates.md # JEXL expressions, Math, & Date.format()
+            ├── rag_and_memory.md           # Vector RAG & Character Long-Term Memory (LTM)
+            ├── group_orchestration.md      # Multi-agent group chat architecture
+            ├── testing_and_debugging.md    # DAG diagnostics & execution tracing
+            └── worlds_and_characters.md    # World/Character/Prompt schemas & Config
 ```
 
 ---
