@@ -13,6 +13,7 @@ const os = require('os');
 const readline = require('readline');
 const { renderGraphToMermaid } = require('../lib/mermaid_renderer.js');
 const { beautifyGraph } = require('../lib/layout_engine.js');
+const { scaffoldBehaviorGraph, SUPPORTED_BLUEPRINTS } = require('../lib/graph_scaffolder.js');
 const BASE_URL = process.env.OPENRP_BASE_URL || 'https://openrp.ai';
 const SUPABASE_URL = process.env.OPENRP_SUPABASE_URL || 'https://uixnaquqjhzcctyfoapf.supabase.co';
 const SUPABASE_ANON_KEY = process.env.OPENRP_SUPABASE_ANON_KEY || 'sb_publishable_DN2mm7PLLgF2GEEd3bjZFw_T36rl4x0';
@@ -942,6 +943,46 @@ const TOOLS = [
         targetDir: { type: 'string', description: 'Optional custom target skill directory' }
       }
     }
+  },
+  {
+    name: 'openrp_scaffold_behavior_graph',
+    description: 'Generates a verified, schema-compliant OpenRP Behavior Graph from standard architectural blueprints (sequential, branching, state_machine, looping) with auto-layout coordinates.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        blueprint: {
+          type: 'string',
+          enum: ['sequential', 'branching', 'state_machine', 'looping'],
+          description: 'Architectural blueprint pattern to scaffold'
+        },
+        name: { type: 'string', description: 'Name of the behavior graph' },
+        systemPrompt: { type: 'string', description: 'System prompt instructions (for sequential / branching)' },
+        keyword: { type: 'string', description: 'Keyword trigger for branching router (default: "help")' },
+        variableName: { type: 'string', description: 'State variable name for state_machine blueprint (default: "affinity")' },
+        cronExpression: { type: 'string', description: 'Cron expression for looping blueprint (default: "*/5 * * * *")' },
+        targetUrl: { type: 'string', description: 'Target API endpoint for looping polling blueprint' },
+        modelId: { type: 'string', description: 'Model ID to assign to LLM nodes' },
+        autoDeploy: { type: 'boolean', description: 'If true, automatically creates or updates the behavior in OpenRP' },
+        behaviorId: { type: 'string', description: 'Behavior ID to update (if autoDeploy is true and updating existing)' },
+        userId: { type: 'string', description: 'User ID (optional if saved in auth)' },
+        worldId: { type: 'string', description: 'World ID (optional if saved in auth)' },
+        characterId: { type: 'string', description: 'Character ID to attach to (optional)' }
+      },
+      required: ['blueprint']
+    }
+  },
+  {
+    name: 'openrp_test_and_heal_behavior',
+    description: 'Autonomous QA tool that sends a test message to an OpenRP chat, monitors background behavior execution status, and extracts failing node error diagnostics for automatic hotfixing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chatId: { type: 'string', description: 'Chat ID to send the test message to' },
+        message: { type: 'string', description: 'Test message content (default: "Hello test")' },
+        maxWaitMs: { type: 'number', description: 'Maximum milliseconds to poll for execution completion (default: 15000)' }
+      },
+      required: ['chatId']
+    }
   }
 ];
 
@@ -1796,6 +1837,204 @@ async function handleToolCall(name, args = {}) {
     const body = args.body;
     if (!p) return { error: true, message: 'path is required' };
     return makeRequest(p, { method, body });
+  }
+
+  if (name === 'openrp_scaffold_behavior_graph') {
+    try {
+      const graph = scaffoldBehaviorGraph(args);
+      const mermaid = renderGraphToMermaid(graph);
+
+      if (args.autoDeploy) {
+        const u = args.userId || authState.userId;
+        const w = args.worldId || authState.worldId;
+        if (!u || !w) return { error: true, message: 'userId and worldId are required when autoDeploy is true' };
+
+        if (args.behaviorId) {
+          // Update existing
+          const updateRes = await makeRequest(`/api/users/${u}/worlds/${w}/behaviors/${args.behaviorId}`, {
+            method: 'PUT',
+            body: {
+              name: args.name || 'Scaffolded Behavior',
+              graph: sanitizeGraph(graph)
+            }
+          });
+          if (updateRes.error) {
+            return { error: true, message: updateRes.message || 'Failed to deploy behavior' };
+          }
+          return {
+            success: true,
+            action: 'updated',
+            behaviorId: args.behaviorId,
+            response: updateRes,
+            mermaid
+          };
+        } else {
+          // Create new
+          const createRes = await makeRequest(`/api/users/${u}/worlds/${w}/behaviors`, {
+            method: 'POST',
+            body: {
+              name: args.name || `Scaffolded ${args.blueprint} Behavior`,
+              handle: args.handle || graph.handle || 'scaffolded-behavior',
+              graph: sanitizeGraph(graph)
+            }
+          });
+          if (createRes.error) {
+            return { error: true, message: createRes.message || 'Failed to deploy behavior' };
+          }
+          const newBehaviorId = createRes?.data?.id || createRes?.id;
+          if (args.characterId && newBehaviorId) {
+            await makeRequest(`/api/v1/characters/${args.characterId}/behaviors`, {
+              method: 'POST',
+              body: { behaviorId: newBehaviorId, behaviorRegistryTagId: null }
+            });
+          }
+          return {
+            success: true,
+            action: 'created',
+            behaviorId: newBehaviorId,
+            attachedToCharacter: args.characterId || null,
+            response: createRes,
+            mermaid
+          };
+        }
+      }
+
+      return {
+        success: true,
+        action: 'scaffolded',
+        blueprint: args.blueprint,
+        nodeCount: graph.nodes.length,
+        edgeCount: graph.edges.length,
+        graph,
+        mermaid
+      };
+    } catch (err) {
+      return { error: true, message: `Scaffolding failed: ${err.message}` };
+    }
+  }
+
+  if (name === 'openrp_test_and_heal_behavior') {
+    const chatId = args.chatId;
+    if (!chatId) return { error: true, message: 'chatId is required' };
+
+    const testMsg = args.message || 'Hello test';
+    const maxWait = Math.min(Math.max(typeof args.maxWaitMs === 'number' ? args.maxWaitMs : 15000, 2000), 60000);
+    const startTime = Date.now();
+
+    try {
+      // 0. Record pre-existing execution ID to avoid race conditions with stale runs
+      let preExistingId = null;
+      try {
+        const initialSearch = await makeRequest('/api/v1/behavior-executions/search', {
+          method: 'POST',
+          body: { chatId, limit: 1 }
+        });
+        const initialList = initialSearch?.data?.data || initialSearch?.data || (Array.isArray(initialSearch) ? initialSearch : []);
+        if (initialList.length > 0) preExistingId = initialList[0].id;
+      } catch (e) {}
+
+      // 1. Send test message
+      const sendRes = await makeRequest(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        body: { content: testMsg }
+      });
+      if (sendRes.error) return { error: true, message: `Failed to send test message: ${sendRes.message || JSON.stringify(sendRes)}` };
+
+      // 2. Poll for behavior execution
+      const terminalStatuses = [
+        'COMPLETED',
+        'FAILED',
+        'CANCELLED',
+        'TIMEOUT',
+        'BEHAVIOR_EXECUTION_STATUS_COMPLETED',
+        'BEHAVIOR_EXECUTION_STATUS_FAILED',
+        'BEHAVIOR_EXECUTION_STATUS_CANCELLED',
+        'BEHAVIOR_EXECUTION_STATUS_TIMEOUT'
+      ];
+
+      let latestExecution = null;
+      while (Date.now() - startTime < maxWait) {
+        await new Promise(r => setTimeout(r, 1500));
+        const searchRes = await makeRequest('/api/v1/behavior-executions/search', {
+          method: 'POST',
+          body: { chatId, limit: 5 }
+        });
+
+        if (searchRes.error) return { error: true, message: searchRes.message };
+
+        const executions = searchRes?.data?.data || searchRes?.data || (Array.isArray(searchRes) ? searchRes : []);
+        const newExecution = executions.find(e => !preExistingId || e.id !== preExistingId);
+        if (newExecution) {
+          latestExecution = newExecution;
+          const status = latestExecution.status || '';
+          if (terminalStatuses.includes(status)) {
+            break;
+          }
+        }
+      }
+
+      if (!latestExecution) {
+        return {
+          success: false,
+          status: 'PENDING_OR_UNTRIGGERED',
+          message: 'No behavior execution record was triggered within the timeout period. Verify behavior is attached and not disabled.',
+          sentMessage: testMsg
+        };
+      }
+
+      const status = latestExecution.status || 'UNKNOWN';
+      const failureStatuses = [
+        'FAILED',
+        'CANCELLED',
+        'TIMEOUT',
+        'BEHAVIOR_EXECUTION_STATUS_FAILED',
+        'BEHAVIOR_EXECUTION_STATUS_CANCELLED',
+        'BEHAVIOR_EXECUTION_STATUS_TIMEOUT'
+      ];
+      const isFailed = failureStatuses.includes(status);
+
+      if (isFailed) {
+        // 3. Extract failing node executions for autonomous diagnostic
+        const execId = latestExecution.id;
+        const nodeExecRes = await makeRequest(`/api/v1/behavior-executions/${execId}/node-executions`);
+        const nodeExecExecutions = nodeExecRes?.data?.data || nodeExecRes?.data || (Array.isArray(nodeExecRes) ? nodeExecRes : []);
+        
+        const failingNodes = nodeExecExecutions.filter(n =>
+          n.status === 'BEHAVIOR_EXECUTION_STATUS_FAILED' ||
+          n.status === 'FAILED' ||
+          n.status === 'BEHAVIOR_EXECUTION_STATUS_TIMEOUT' ||
+          n.status === 'TIMEOUT' ||
+          n.output?.error
+        );
+
+        return {
+          success: false,
+          status: 'FAILED',
+          executionId: execId,
+          behaviorId: latestExecution.behaviorId,
+          failingNodesCount: failingNodes.length,
+          failingNodes: failingNodes.map(n => ({
+            nodeId: n.nodeId,
+            nodeType: n.nodeType || n.type,
+            error: n.output?.error || n.error || 'Unknown execution error',
+            input: n.input
+          })),
+          diagnostic: 'Behavior execution failed. Inspect failingNodes output.error to perform targeted hotfix.',
+          rawExecution: latestExecution
+        };
+      }
+
+      return {
+        success: true,
+        status: 'COMPLETED',
+        executionId: latestExecution.id,
+        behaviorId: latestExecution.behaviorId,
+        message: 'Behavior executed successfully to completion with 0 runtime errors!',
+        rawExecution: latestExecution
+      };
+    } catch (err) {
+      return { error: true, message: `QA test execution failed: ${err.message}` };
+    }
   }
 
   return { error: true, message: `Tool '${name}' not recognized` };
