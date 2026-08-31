@@ -16,7 +16,7 @@ Whenever designing, modifying, validating, or debugging OpenRP Behavior Graphs:
 * `utilities/map`: Input MUST be `itemTemplate: { "$template": "..." }` or `{ "$expression": "..." }`. Never use `itemExpression`.
 * `utilities/join`: Output property is `text`. Never reference `.string`.
 * `storage/insert_chat_message`: Participant parameter MUST be `chatParticipantId`. Never use `participantId`.
-* `storage/update_typing_status`: Participant parameter MUST be `chatParticipantId`. Never use `participantId`.
+* `storage/update_typing_status`: Participant parameter MUST be `participantId`. Never use `chatParticipantId`.
 
 ## 3. Behavior Attachment & Isolation
 * When testing or deploying a custom behavior DAG, always detach/disable default `openrp/behaviors/chat` from the character or character group to prevent concurrent dual execution and race conditions.
