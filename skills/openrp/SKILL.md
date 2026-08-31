@@ -46,7 +46,7 @@ At the beginning of every session:
 For all work related to OpenRP, use the existing `openrp` skill as the central knowledge base. This includes, but is not limited to:
 - OpenRP API & REST endpoints
 - Authentication & Supabase session lifecycle
-- MCP tools (47 developer tools)
+- MCP tools (60 developer tools)
 - Worlds (metadata, README, visibility tiers)
 - Characters & Character Studio
 - Character groups, hierarchies, and sub-factions
@@ -108,6 +108,8 @@ When updating the `openrp` skill:
 
 ### 6. Mandatory Debugging & Verification-to-Completion Protocol
 When an OpenRP-related problem occurs or when modifying/testing any Behavior Graph:
+- **Autonomous Scaffolding**: Whenever asked to create a new behavior from scratch or from a high-level user prompt, use `openrp_scaffold_behavior_graph` to generate a verified, auto-laid-out foundation from standard blueprints (sequential, branching, state_machine, looping).
+- **Autonomous QA Verification**: After deploying or modifying a behavior, execute `openrp_test_and_heal_behavior` to verify live runtime execution and automatically extract failing node error diagnostics for targeted self-healing.
 - **Visual Debugging**: Whenever you are asked to analyze, debug, or explain a behavior graph, ALWAYS call `openrp_render_behavior_mermaid` first to generate a visual diagram in the chat so both you and the user can see the topological flow clearly.
 - **Auto-Layout Enforcement**: If you ever create or modify a behavior graph by adding nodes/edges, you MUST call `openrp_beautify_graph` afterwards to fix the spatial coordinates. Never leave nodes stacked on `x:0, y:0`.
 - **Architectural Blueprint Matching**: Whenever you are asked to design, scaffold, or generate a new Behavior Graph, ALWAYS choose and adapt one of the 4 standard patterns from `references/blueprints.md` (Sequential Chain, Branching Router, State Machine, or Resilient Loop). Never invent arbitrary unverified topologies.
@@ -386,17 +388,17 @@ These nodes process state, invoke models, or dispatch actions. If disconnected, 
 
 ---
 
-## 8. Complete 56 MCP Tools Reference Guide
+## 8. Complete 60 MCP Tools Reference Guide
 
-The OpenRP MCP Server exposes **56 high-level developer tools** organized into 9 operational domains:
+The OpenRP MCP Server exposes **60 high-level developer tools** organized into 9 operational domains:
 
 1. **Authentication & Session** (5 tools): `openrp_auth`, `openrp_web_login`, `openrp_set_auth`, `openrp_refresh_token`, `openrp_get_me`
 2. **World Management** (6 tools): `openrp_list_my_worlds`, `openrp_get_world`, `openrp_create_world`, `openrp_update_world`, `openrp_update_world_readme`, `openrp_delete_world`
 3. **Lorebook System** (7 tools): `openrp_list_lores`, `openrp_list_lore_characters`, `openrp_list_character_lores`, `openrp_get_lore`, `openrp_create_lore`, `openrp_update_lore`, `openrp_delete_lore`
 4. **Character Studio & Factions** (9 tools): `openrp_list_characters`, `openrp_list_character_groups`, `openrp_create_character_group`, `openrp_update_character_group`, `openrp_delete_character_group`, `openrp_get_character`, `openrp_create_character`, `openrp_update_character`, `openrp_delete_character`
 5. **Prompt Template System** (4 tools): `openrp_list_prompts`, `openrp_get_prompt`, `openrp_create_prompt`, `openrp_delete_prompt`
-6. **Behavior Pipeline Engine** (15 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_render_behavior_mermaid`, `openrp_beautify_graph`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_list_character_behaviors`, `openrp_detach_behavior_from_character`, `openrp_list_character_group_behaviors`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group`, `openrp_execute_behavior_debug`
-7. **Behavior Executions & Debugging** (3 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`
+6. **Behavior Pipeline Engine** (16 tools): `openrp_list_behaviors`, `openrp_get_behavior`, `openrp_render_behavior_mermaid`, `openrp_beautify_graph`, `openrp_scaffold_behavior_graph`, `openrp_update_behavior`, `openrp_edit_behavior_node`, `openrp_deploy_behavior`, `openrp_delete_behavior`, `openrp_attach_behavior_to_character`, `openrp_list_character_behaviors`, `openrp_detach_behavior_from_character`, `openrp_list_character_group_behaviors`, `openrp_attach_behavior_to_character_group`, `openrp_detach_behavior_from_character_group`, `openrp_execute_behavior_debug`
+7. **Behavior Executions & Debugging** (4 tools): `openrp_search_behavior_executions`, `openrp_get_behavior_execution`, `openrp_get_behavior_node_executions`, `openrp_test_and_heal_behavior`
 8. **Chat & Live Messaging** (5 tools): `openrp_create_chat`, `openrp_list_chats`, `openrp_get_chat`, `openrp_get_chat_messages`, `openrp_send_message`
 9. **Discovery, AI Models & Universal Gateway** (4 tools): `openrp_list_models`, `openrp_discover_worlds`, `openrp_raw_api`, `openrp_sync_skills`
 
@@ -466,6 +468,7 @@ The OpenRP MCP Server exposes **56 high-level developer tools** organized into 9
 | `openrp_get_behavior` | `userId?`, `worldId?`, `behaviorId` | Retrieves full Behavior Graph JSON (nodes, edges, expressions) |
 | `openrp_render_behavior_mermaid` | `behaviorId` | Renders a complex JSON behavior graph into a Mermaid.js diagram for easy visual debugging. |
 | `openrp_beautify_graph` | `behaviorId`, `userId?`, `worldId?` | Analyzes a messy graph and automatically re-calculates all X/Y coordinates using a DAG layout algorithm to make it neat. |
+| `openrp_scaffold_behavior_graph` | `blueprint`, `name?`, `systemPrompt?`, `keyword?`, `variableName?`, `cronExpression?`, `targetUrl?`, `modelId?`, `autoDeploy?`, `behaviorId?`, `userId?`, `worldId?`, `characterId?` | Generates a verified, schema-compliant Behavior Graph from standard blueprints with auto-layout coordinates |
 | `openrp_update_behavior` | `userId?`, `worldId?`, `behaviorId`, `name?`, `handle?`, `graph` | In-place update of an existing Behavior Graph without losing character bindings |
 | `openrp_edit_behavior_node` | `userId?`, `worldId?`, `behaviorId`, `nodeId`, `nodeData` | Granular in-place edit of a single node's data/expressions |
 | `openrp_deploy_behavior` | `userId?`, `worldId?`, `characterId?`, `name`, `handle`, `graph`, `deleteOldBehaviors?` | Atomic deployment and auto-binding of a behavior graph to a character |
@@ -484,6 +487,7 @@ The OpenRP MCP Server exposes **56 high-level developer tools** organized into 9
 | `openrp_search_behavior_executions` | `limit?`, `behaviorId?`, `chatId?`, `status?` | Searches execution history runs (`COMPLETED`, `FAILED`, etc.) |
 | `openrp_get_behavior_execution` | `executionId` | Retrieves execution summary, timestamps, trigger message, and status |
 | `openrp_get_behavior_node_executions` | `executionId` | Retrieves step-by-step resolved node execution traces, inputs, outputs, and errors |
+| `openrp_test_and_heal_behavior` | `chatId`, `message?`, `maxWaitMs?` | Autonomous QA tool that sends a test message, monitors execution status, and extracts failing node error diagnostics for automatic hotfixing |
 
 ### Category 8: Chat & Live Messaging
 | Tool Name | Parameters | Purpose |

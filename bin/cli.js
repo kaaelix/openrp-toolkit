@@ -40,7 +40,7 @@ function showHelp() {
   console.log('  add, install           Interactive installer for AI assistants & CLIs');
   console.log('  sync                   Synchronize skills and MCP configs to detected platforms');
   console.log('  update, upgrade        Auto-update toolkit via Git/npm and re-sync all skills');
-  console.log('  list                   List all 47 MCP tools, skills, and references');
+  console.log('  list                   List all 60 MCP tools, skills, and references');
   console.log('  auth                   Interactive setup for OpenRP authentication');
   console.log('  doctor                 Run diagnostics on Node runtime, config, and OpenRP API');
   console.log('  render <behaviorId>    Render a behavior graph to Mermaid.js diagram');
@@ -420,19 +420,21 @@ async function runInstall() {
   console.log('│ [SUCCESS] OpenRP Toolkit installed successfully!          │');
   console.log('│                                                           │');
   console.log('│ Test diagnostic:  npx openrp-toolkit doctor               │');
-  console.log('│ Browse 47 tools:  npx openrp-toolkit list                 │');
+  console.log('│ Browse 60 tools:  npx openrp-toolkit list                 │');
   console.log('│ Update auth:      npx openrp-toolkit auth                 │');
   console.log('└───────────────────────────────────────────────────────────┘\n');
 }
 
 function runList() {
   printBanner();
-  console.log('OpenRP Toolkit Catalog (47 MCP Tools & Native Skills)\n');
+  console.log('OpenRP Toolkit Catalog (60 MCP Tools & Native Skills)\n');
 
   const categories = [
     {
-      name: '1. Authentication & Session (3 Tools)',
+      name: '1. Authentication & Session (5 Tools)',
       tools: [
+        ['openrp_auth', 'Launch interactive CLI authentication flow'],
+        ['openrp_web_login', 'Start Quantum Auth Bridge for 1-click browser login'],
         ['openrp_set_auth', 'Save/update API token, refresh token, and context IDs'],
         ['openrp_refresh_token', 'Manually trigger Supabase JWT token refresh'],
         ['openrp_get_me', 'Get authenticated profile, subscription, and credits']
@@ -485,23 +487,33 @@ function runList() {
       ]
     },
     {
-      name: '6. Behavior Pipeline Engine (7 Tools)',
+      name: '6. Behavior Pipeline Engine (16 Tools)',
       tools: [
         ['openrp_list_behaviors', 'List all behavior pipeline graphs in world'],
         ['openrp_get_behavior', 'Get full Behavior Graph JSON (nodes, edges)'],
+        ['openrp_render_behavior_mermaid', 'Render behavior graph into Mermaid.js diagram'],
+        ['openrp_beautify_graph', 'Re-calculate node coordinates with DAG layout algorithm'],
+        ['openrp_scaffold_behavior_graph', 'Scaffold verified Behavior Graph from architectural blueprints'],
         ['openrp_update_behavior', 'In-place update of behavior graph without losing bindings'],
         ['openrp_edit_behavior_node', 'Granular in-place edit of single node data'],
         ['openrp_deploy_behavior', 'Deploy behavior graph and auto-attach to character'],
         ['openrp_delete_behavior', 'Delete behavior graph from world'],
-        ['openrp_attach_behavior_to_character', 'Attach behavior with auto-detach of old bindings']
+        ['openrp_attach_behavior_to_character', 'Attach behavior with auto-detach of old bindings'],
+        ['openrp_list_character_behaviors', 'List all behavior graphs attached to character'],
+        ['openrp_detach_behavior_from_character', 'Detach behavior from character'],
+        ['openrp_list_character_group_behaviors', 'List behaviors attached to character group'],
+        ['openrp_attach_behavior_to_character_group', 'Attach behavior to character group'],
+        ['openrp_detach_behavior_from_character_group', 'Detach behavior from character group'],
+        ['openrp_execute_behavior_debug', 'Execute behavior manually for testing and debugging']
       ]
     },
     {
-      name: '7. Tracing & Debugging (3 Tools)',
+      name: '7. Tracing & Debugging (4 Tools)',
       tools: [
         ['openrp_search_behavior_executions', 'Search behavior execution history runs'],
         ['openrp_get_behavior_execution', 'Get execution status, timestamps, and trigger message'],
-        ['openrp_get_behavior_node_executions', 'Get step-by-step resolved node inputs, outputs, and errors']
+        ['openrp_get_behavior_node_executions', 'Get step-by-step resolved node inputs, outputs, and errors'],
+        ['openrp_test_and_heal_behavior', 'Autonomous QA tool that tests execution and extracts failure diagnostics']
       ]
     },
     {
@@ -515,11 +527,12 @@ function runList() {
       ]
     },
     {
-      name: '9. Discovery & AI Models (3 Tools)',
+      name: '9. Discovery, AI Models & Gateway (4 Tools)',
       tools: [
         ['openrp_list_models', 'List 38+ Foundation AI Models (Claude, GPT, Gemini, DeepSeek)'],
         ['openrp_discover_worlds', 'Search public community worlds on OpenRP explore page'],
-        ['openrp_raw_api', 'Universal Gateway to call any OpenRP REST API endpoint directly']
+        ['openrp_raw_api', 'Universal Gateway to call any OpenRP REST API endpoint directly'],
+        ['openrp_sync_skills', 'Synchronize latest OpenRP skills to AI agent directories']
       ]
     }
   ];
@@ -1073,7 +1086,7 @@ async function runDoctor() {
 
   // 2. Check Package Integrity
   if (fs.existsSync(MCP_SERVER_SCRIPT) && fs.existsSync(path.join(SKILLS_DIR, 'SKILL.md'))) {
-    console.log('[CHECK 2/4] Package Integrity & Skill Files -> OK (47 MCP tools ready)');
+    console.log('[CHECK 2/4] Package Integrity & Skill Files -> OK (60 MCP tools ready)');
   } else {
     console.log('[CHECK 2/4] Package Integrity: Missing internal files');
     errors++;
