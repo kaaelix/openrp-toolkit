@@ -21,6 +21,7 @@ The project has an existing skill named `openrp`. This `openrp` skill is the **p
 - **Live Raw References CDN**: `https://raw.githubusercontent.com/kaaelix/openrp-toolkit/main/skills/openrp/`
 - **Modular Technical References**:
   - `references/architecture.md` — Full system architecture, database ER models, execution lifecycles, and complete REST API endpoints.
+  - `references/blueprints.md` — 4 production-tested architectural patterns (Sequential, Branching, State Machine, Looping).
   - `references/behavior_nodes.md` — 38 behavior node specifications, port handles, JEXL evaluator, variables, and lifecycles.
   - `references/worlds_and_characters.md` — World CRUD operations, RAG vector embeddings, tier visibility controls, character schemas, and prompt templates.
   - `references/group_orchestration.md` — Multi-character room architecture, participant filtering, mention triggers, round-robin turn cycling, and arbiter patterns.
@@ -109,6 +110,7 @@ When updating the `openrp` skill:
 When an OpenRP-related problem occurs or when modifying/testing any Behavior Graph:
 - **Visual Debugging**: Whenever you are asked to analyze, debug, or explain a behavior graph, ALWAYS call `openrp_render_behavior_mermaid` first to generate a visual diagram in the chat so both you and the user can see the topological flow clearly.
 - **Auto-Layout Enforcement**: If you ever create or modify a behavior graph by adding nodes/edges, you MUST call `openrp_beautify_graph` afterwards to fix the spatial coordinates. Never leave nodes stacked on `x:0, y:0`.
+- **Architectural Blueprint Matching**: Whenever you are asked to design, scaffold, or generate a new Behavior Graph, ALWAYS choose and adapt one of the 4 standard patterns from `references/blueprints.md` (Sequential Chain, Branching Router, State Machine, or Resilient Loop). Never invent arbitrary unverified topologies.
 1. **Never Assume or Claim Success Without Evidence**: Never claim a fix or behavior is working based solely on deployment. You must verify actual runtime execution traces.
 2. **Execute Live Trigger**: Trigger the behavior via `POST /api/chats/{chatId}/messages` or test input.
 3. **Poll Execution Run Status**:
@@ -174,6 +176,7 @@ OpenRP separates world design, character identities, and interactive execution i
 ## Technical References
 
 - **[Complete Nodes Encyclopedia & Examples](./references/all_nodes_encyclopedia.md)**: Exhaustive reference with JSON configurations and port definitions for all 37 OpenRP nodes.
+- **[Behavior Graph Blueprints](references/blueprints.md)**: 4 production-tested architectural patterns (Sequential, Branching, State Machine, Looping).
 - **[Behavior Nodes Specification](./references/behavior_nodes.md)**: Architectural guide for node categories, layout coordinates, and Zero-LLM Game Engine patterns.
 - **[Token Economy & Eco-Modes Reference](./references/token_optimization_and_modes.md)**: User-controlled Eco vs Full mode toggles, context budget pruning, zero-LLM fast paths, and 78% token reduction.
 - **[Expressions & Templates Reference](./references/expressions_and_templates.md)**: JEXL operators, `$variables`, `$requestMetadata`, `Math` object, and timezone-aware `Date.format()`.
