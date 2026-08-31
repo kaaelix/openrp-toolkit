@@ -40,25 +40,86 @@ function validateBehaviorGraph(graph) {
   const nodeMap = new Map();
   nodes.forEach(n => nodeMap.set(n.id, n));
 
+  function getExpectedHandles(node) {
+    const type = node.type || '';
+    if (type.startsWith('events/')) {
+      return { in: [], out: ['next'] };
+    }
+    if (type === 'control_flow/if') {
+      return { in: ['previous'], out: ['true', 'false'] };
+    }
+    if (type === 'control_flow/try') {
+      return { in: ['previous', 'loopEnd'], out: ['loopStart', 'next', 'error'] };
+    }
+    if (type === 'control_flow/repeat_until') {
+      return { in: ['previous', 'loopEnd'], out: ['loopStart', 'next'] };
+    }
+    if (type === 'control_flow/end_if') {
+      return { in: ['in1', 'in2', 'previous'], out: ['next'] };
+    }
+    if (type === 'control_flow/split') {
+      const count = node.data?.outputCount || 2;
+      const outs = [];
+      for (let i = 1; i <= count; i++) outs.push(`out${i}`);
+      return { in: ['previous'], out: outs };
+    }
+    if (type === 'control_flow/sync') {
+      const count = node.data?.inputCount || 2;
+      const ins = [];
+      for (let i = 1; i <= count; i++) ins.push(`in${i}`);
+      return { in: ins, out: ['next'] };
+    }
+    // Default standard nodes (ai/*, storage/*, utilities/*)
+    return { in: ['previous'], out: ['next'] };
+  }
+
   // 2. Edge Formatting & Node Connectivity
   const incomingEdges = new Map();
   const outgoingEdges = new Map();
+  const seenEdges = new Set();
 
   edges.forEach((edge, idx) => {
-    if (!edge.source || !edge.target) {
+    if (!edge || typeof edge !== 'object' || !edge.source || !edge.target) {
       issues.errors.push(`Edge at index ${idx} is missing source or target.`);
       return;
     }
 
-    if (!nodeMap.has(edge.source)) {
+    const srcNode = nodeMap.get(edge.source);
+    const tgtNode = nodeMap.get(edge.target);
+
+    if (!srcNode) {
       issues.errors.push(`Edge source "${edge.source}" does not exist in nodes array.`);
     }
-    if (!nodeMap.has(edge.target)) {
+    if (!tgtNode) {
       issues.errors.push(`Edge target "${edge.target}" does not exist in nodes array.`);
     }
 
+    const srcHandle = edge.sourceHandle || 'next';
+    const tgtHandle = edge.targetHandle || 'previous';
+
+    // Duplicate Edge Detection
+    const edgeKey = `${edge.source}:${srcHandle}->${edge.target}:${tgtHandle}`;
+    if (seenEdges.has(edgeKey)) {
+      issues.errors.push(`Duplicate edge detected from "${edge.source}" (${srcHandle}) to "${edge.target}" (${tgtHandle}).`);
+    }
+    seenEdges.add(edgeKey);
+
+    // Validate Handles
+    if (srcNode) {
+      const expected = getExpectedHandles(srcNode);
+      if (!expected.out.includes(srcHandle)) {
+        issues.errors.push(`Invalid outgoing handle "${srcHandle}" on "${srcNode.type}" (ID: "${srcNode.id}"). Expected one of: [${expected.out.join(', ')}].`);
+      }
+    }
+    if (tgtNode) {
+      const expected = getExpectedHandles(tgtNode);
+      if (!expected.in.includes(tgtHandle)) {
+        issues.errors.push(`Invalid incoming handle "${tgtHandle}" on "${tgtNode.type}" (ID: "${tgtNode.id}"). Expected one of: [${expected.in.join(', ')}].`);
+      }
+    }
+
     // Edge ID Standard: xy-edge__<src><srcHandle>-<tgt><tgtHandle>
-    const expectedId = `xy-edge__${edge.source}${edge.sourceHandle || 'next'}-${edge.target}${edge.targetHandle || 'previous'}`;
+    const expectedId = `xy-edge__${edge.source}${srcHandle}-${edge.target}${tgtHandle}`;
     if (edge.id !== expectedId) {
       issues.warnings.push(`Edge ID "${edge.id}" does not follow ReactFlow standard "${expectedId}".`);
     }
@@ -151,8 +212,8 @@ function validateBehaviorGraph(graph) {
 
     // Zod Schema Check: storage/update_typing_status
     if (node.type === 'storage/update_typing_status') {
-      if (node.data?.participantId && !node.data?.chatParticipantId) {
-        issues.errors.push(`Node "${node.id}" (storage/update_typing_status) uses participantId. In OpenRP, update_typing_status MUST use chatParticipantId.`);
+      if (node.data?.chatParticipantId && !node.data?.participantId) {
+        issues.errors.push(`Node "${node.id}" (storage/update_typing_status) uses chatParticipantId. In OpenRP, update_typing_status MUST use participantId.`);
       }
     }
 
@@ -188,7 +249,7 @@ function validateBehaviorGraph(graph) {
     outs.forEach(edge => {
       const targetNode = nodeMap.get(edge.target);
       // Skip loop returns (loopEnd) which naturally go backwards
-      if (targetNode && targetNode.position && node.position && edge.targetHandle !== 'loopEnd') {
+      if (targetNode && typeof node.position?.x === 'number' && typeof targetNode.position?.x === 'number' && edge.targetHandle !== 'loopEnd') {
         if (targetNode.position.x <= node.position.x && node.position.x - targetNode.position.x > 50) {
            issues.warnings.push(`Code Smell (Layout): Edge "${edge.id}" goes backwards. Source "${node.id}" (X:${Math.round(node.position.x)}) -> Target "${targetNode.id}" (X:${Math.round(targetNode.position.x)}). Violates Monotonic X-Coordinate rule.`);
         }
